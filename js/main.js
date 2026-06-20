@@ -1,0 +1,230 @@
+import { readKey, writeKey, debounce } from "./modules/storage.js";
+import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
+import { getProfile, initials, renderGoogleButton, signInAsGuest, googleConfigured } from "./modules/auth.js";
+import { fetchLive } from "./modules/live.js";
+import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./modules/standings.js";
+import { renderGroups } from "./modules/render-groups.js";
+import { renderKnockout } from "./modules/render-knockout.js";
+
+const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
+
+let state = defaultState();
+let storageKey = null;
+let pollTimer = null;
+let fetching = false;
+
+const $ = (selector) => document.querySelector(selector);
+const board = $("#board");
+const viewGroups = $("#view-groups");
+const viewKo = $("#view-ko");
+
+const persist = debounce(() => { if (storageKey) writeKey(storageKey, state); }, 250);
+
+function relTime(ts) {
+  if (!ts) return "";
+  const seconds = Math.floor((Date.now() - ts) / 1000);
+  if (seconds < 60) return "recién";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  return `hace ${Math.floor(hours / 24)} d`;
+}
+
+function updateLiveStatus(forced) {
+  const el = $("#liveStatus");
+  if (!state.useLive) { el.innerHTML = '<span class="live__dot live__dot--off"></span>modo manual'; return; }
+  if (forced === "loading") { el.innerHTML = '<span class="live__dot"></span>buscando…'; return; }
+  if (forced === "error") { el.innerHTML = '<span class="live__dot live__dot--off"></span>sin conexión'; return; }
+  const n = Object.keys(state.live).length;
+  el.innerHTML = `<span class="live__dot"></span>${n} oficiales · ${relTime(state.liveAt) || "—"}`;
+}
+
+function renderProgress() {
+  const n = filledCount(state);
+  $("#bar").style.width = (n / 72 * 100) + "%";
+  $("#prog").textContent = `${n} / 72`;
+  document.querySelectorAll(".tab").forEach(tab => {
+    if (tab.dataset.tab === "ko") tab.innerHTML = groupsComplete(state) ? "Eliminatorias" : 'Eliminatorias <span class="tab__count">🔒</span>';
+  });
+  updateLiveStatus();
+}
+
+function renderNote() {
+  $("#note").innerHTML = groupsComplete(state)
+    ? "<b>Listo:</b> grupos completos. Pasá a Eliminatorias y armá tu camino al título."
+    : 'Los partidos jugados muestran el <b>resultado oficial</b> (Final, en dorado); el resto es tu pronóstico editable. La tabla ordena por Pts → DG → GF. El bracket se desbloquea con los 72 partidos.';
+}
+
+function render() {
+  board.innerHTML = renderGroups(state);
+  if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
+  renderProgress();
+  renderNote();
+}
+
+async function refreshLive() {
+  if (fetching || !state.useLive) return;
+  fetching = true;
+  updateLiveStatus("loading");
+  const live = await fetchLive();
+  fetching = false;
+  if (live) {
+    state.live = live;
+    state.liveAt = Date.now();
+    render();
+    persist();
+  } else {
+    updateLiveStatus("error");
+  }
+}
+
+function startPoll() {
+  clearInterval(pollTimer);
+  if (state.useLive) pollTimer = setInterval(refreshLive, 5 * 60 * 1000);
+}
+
+function focusScore(g, m, side) {
+  const input = document.querySelector(`.score[data-g="${g}"][data-m="${m}"][data-s="${side}"]`);
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+
+function onScoreInput(event) {
+  const input = event.target.closest(".score");
+  if (!input || input.disabled) return;
+  let value = input.value.replace(/\D/g, "");
+  if (value.length > 2) value = value.slice(0, 2);
+  input.value = value;
+  const key = matchKey(input.dataset.g, input.dataset.m);
+  state.results[key] = state.results[key] || { h: "", a: "" };
+  state.results[key][input.dataset.s] = value;
+  if (groupsComplete(state)) { state.ko = {}; state.tp = null; }
+  const g = input.dataset.g, m = input.dataset.m, s = input.dataset.s;
+  board.innerHTML = renderGroups(state);
+  renderProgress();
+  renderNote();
+  focusScore(g, m, s);
+  persist();
+}
+
+function onBoardClick(event) {
+  const tieBtn = event.target.closest(".tie__team[data-c]");
+  if (tieBtn) {
+    const round = Number(tieBtn.dataset.r);
+    const m = Number(tieBtn.dataset.m);
+    const key = `${round}-${m}`;
+    state.ko[key] = state.ko[key] === tieBtn.dataset.c ? undefined : tieBtn.dataset.c;
+    invalidateDownstream(state);
+    viewKo.innerHTML = renderKnockout(state);
+    persist();
+    return;
+  }
+  const tpBtn = event.target.closest(".tie__team[data-tp]");
+  if (tpBtn) {
+    state.tp = state.tp === tpBtn.dataset.tp ? null : tpBtn.dataset.tp;
+    viewKo.innerHTML = renderKnockout(state);
+    persist();
+  }
+}
+
+function onTabClick(tab) {
+  state.tab = tab.dataset.tab;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("tab--active", t === tab));
+  viewGroups.hidden = state.tab !== "groups";
+  viewKo.hidden = state.tab !== "ko";
+  if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
+  persist();
+}
+
+function onLiveToggle(event) {
+  state.useLive = event.target.checked;
+  if (groupsComplete(state)) { state.ko = {}; state.tp = null; }
+  startPoll();
+  render();
+  persist();
+  if (state.useLive) refreshLive();
+}
+
+function onReset() {
+  if (!confirm("¿Borrar tus pronósticos y empezar de cero? Los resultados oficiales se mantienen.")) return;
+  state.results = {};
+  state.ko = {};
+  state.tp = null;
+  render();
+  persist();
+}
+
+function bindEvents() {
+  document.addEventListener("input", onScoreInput);
+  document.addEventListener("click", onBoardClick);
+  document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => onTabClick(tab)));
+  $("#liveToggle").addEventListener("change", onLiveToggle);
+  $("#refresh").addEventListener("click", refreshLive);
+  $("#reset").addEventListener("click", onReset);
+  $("#themeToggle").addEventListener("click", onThemeToggle);
+  $("#switchUser").addEventListener("click", openGate);
+}
+
+function onThemeToggle() {
+  const next = toggleTheme();
+  $("#themeToggle").setAttribute("aria-pressed", next === "light");
+}
+
+function renderProfileChip(profile) {
+  const chip = $("#profileChip");
+  const avatar = profile.picture
+    ? `<img class="profile__avatar" src="${profile.picture}" alt="" referrerpolicy="no-referrer">`
+    : `<span class="profile__avatar profile__avatar--initials">${initials(profile.name)}</span>`;
+  chip.innerHTML = `${avatar}<span class="profile__name">${profile.name}</span>`;
+}
+
+function openGate() {
+  $("#authGate").hidden = false;
+}
+
+function closeGate() {
+  $("#authGate").hidden = true;
+}
+
+async function activateProfile(profile) {
+  renderProfileChip(profile);
+  closeGate();
+  storageKey = `wc2026:data:${profile.id}`;
+  const saved = await readKey(storageKey);
+  state = Object.assign(defaultState(), saved || {});
+  $("#liveToggle").checked = state.useLive;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("tab--active", t.dataset.tab === state.tab));
+  viewGroups.hidden = state.tab !== "groups";
+  viewKo.hidden = state.tab !== "ko";
+  render();
+  if (state.useLive) refreshLive();
+  startPoll();
+}
+
+function initGate() {
+  const googleBtn = $("#googleBtn");
+  const googleWrap = $("#googleAuth");
+  if (!googleConfigured()) {
+    googleWrap.hidden = true;
+  } else {
+    renderGoogleButton(googleBtn, (profile) => activateProfile(profile));
+  }
+  $("#guestForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = $("#guestName").value;
+    const profile = signInAsGuest(name);
+    activateProfile(profile);
+  });
+}
+
+function init() {
+  initTheme();
+  $("#themeToggle").setAttribute("aria-pressed", getTheme() === "light");
+  bindEvents();
+  initGate();
+  const profile = getProfile();
+  if (profile) activateProfile(profile);
+  else openGate();
+}
+
+init();
