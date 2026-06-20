@@ -1,0 +1,118 @@
+@use "../abstracts/variables" as *;
+
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--color-bg) 78%, transparent);
+  backdrop-filter: blur(10px);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.auth-gate__card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: $radius;
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.auth-gate__kicker {
+  font-size: 11px;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.auth-gate__title {
+  font-family: $font-display;
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 10px 0 20px;
+  letter-spacing: .01em;
+}
+
+.auth-gate__google {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.auth-gate__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 18px;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-line);
+  }
+}
+
+.auth-gate__form {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-gate__input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: $radius-sm;
+  border: 1px solid var(--color-line);
+  background: var(--score-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: $transition-fast;
+
+  &::placeholder {
+    color: var(--color-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+}
+
+.auth-gate__submit {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: $radius-sm;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 800;
+  font-size: 14px;
+  transition: $transition-fast;
+  flex: none;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+}
+
+.auth-gate__hint {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
