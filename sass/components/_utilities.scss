@@ -1,0 +1,15 @@
+@use "../abstracts/variables" as *;
+
+.note {
+  max-width: $max-width;
+  margin: 26px auto 0;
+  padding: 0 16px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.6;
+
+  b {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+}
