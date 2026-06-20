@@ -99,8 +99,8 @@
   }
 
   &__icon {
-    display: none;
-    line-height: 1;
+    width: 17px;
+    height: 17px;
   }
 }
 
@@ -269,7 +269,7 @@
     }
   }
 
-  input:checked + &__track {
+  input:checked+&__track {
     background: color-mix(in srgb, var(--color-accent) 25%, transparent);
     border-color: var(--color-accent);
 
@@ -279,7 +279,7 @@
     }
   }
 
-  input:focus-visible + &__track {
+  input:focus-visible+&__track {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 25%, transparent);
   }
 }

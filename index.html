@@ -1,73 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0B1220">
-<title>Mundial 2026 · Fixture interactivo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1220">
+  <title>Mundial 2026 · Fixture interactivo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="icon" type="image/webp" href="assets/img/logo/logo_fixture_mundial2026.webp">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
-<div class="auth-gate" id="authGate" hidden>
-  <div class="auth-gate__card">
-    <p class="auth-gate__kicker">Mundial 2026</p>
-    <h2 class="auth-gate__title">Iniciá sesión para guardar tu pronóstico</h2>
-    <div class="auth-gate__google" id="googleAuth">
-      <div id="googleBtn"></div>
-    </div>
-    <div class="auth-gate__divider"><span>o</span></div>
-    <form class="auth-gate__form" id="guestForm">
-      <label class="sr-only" for="guestName">Tu nombre</label>
-      <input class="auth-gate__input" id="guestName" type="text" placeholder="Tu nombre" maxlength="24" autocomplete="name" required>
-      <button class="auth-gate__submit" type="submit">Continuar</button>
-    </form>
-    <p class="auth-gate__hint">Cada nombre guarda su propio pronóstico en este dispositivo.</p>
-  </div>
-</div>
-
-<header class="topbar">
-  <div class="topbar__row">
-    <div class="topbar__brand">
-      <span class="topbar__kicker">FIFA World Cup</span>
-      <h1 class="topbar__title">Mundial 20<span>26</span></h1>
-    </div>
-    <div class="topbar__hosts" aria-label="Anfitriones">
-      <img src="https://flagcdn.com/w40/ca.png" alt="Canadá" width="40" height="30">
-      <img src="https://flagcdn.com/w40/mx.png" alt="México" width="40" height="30">
-      <img src="https://flagcdn.com/w40/us.png" alt="Estados Unidos" width="40" height="30">
-    </div>
-    <div class="topbar__account">
-      <div class="profile" id="profileChip"></div>
-      <button class="topbar__ghost" id="switchUser">Cambiar usuario</button>
-      <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" aria-pressed="false">
-        <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">🌙</span>
-        <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">☀️</span>
-      </button>
-      <button class="topbar__ghost" id="reset">Reiniciar</button>
+  <div class="auth-gate" id="authGate" hidden>
+    <div class="auth-gate__card">
+      <p class="auth-gate__kicker">Mundial 2026</p>
+      <h2 class="auth-gate__title">Iniciá sesión para guardar tu pronóstico</h2>
+      <div class="auth-gate__google" id="googleAuth">
+        <div id="googleBtn"></div>
+      </div>
+      <div class="auth-gate__divider"><span>o</span></div>
+      <form class="auth-gate__form" id="guestForm">
+        <label class="sr-only" for="guestName">Tu nombre</label>
+        <input class="auth-gate__input" id="guestName" type="text" placeholder="Tu nombre" maxlength="24"
+          autocomplete="name" required>
+        <button class="auth-gate__submit" type="submit">Continuar</button>
+      </form>
+      <p class="auth-gate__hint">Cada nombre guarda su propio pronóstico en este dispositivo.</p>
     </div>
   </div>
-  <nav class="tabs">
-    <button class="tab tab--active" data-tab="groups">Grupos</button>
-    <button class="tab" data-tab="ko">Eliminatorias</button>
-  </nav>
-  <div class="bar">
-    <div class="progress"><div class="progress__bar"><div class="progress__fill" id="bar"></div></div><span class="progress__label" id="prog">0 / 72</span></div>
-    <div class="live">
-      <label class="switch"><input type="checkbox" id="liveToggle" checked><span class="switch__track"></span>Resultados oficiales</label>
-      <span class="live__status" id="liveStatus"></span>
-      <button class="live__refresh" id="refresh">Actualizar</button>
+
+  <header class="topbar">
+    <div class="topbar__row">
+      <div class="topbar__brand">
+        <span class="topbar__kicker">FIFA World Cup</span>
+        <h1 class="topbar__title">Mundial 20<span>26</span></h1>
+      </div>
+      <div class="topbar__hosts" aria-label="Anfitriones">
+        <img src="https://flagcdn.com/w40/ca.png" alt="Canadá" width="40" height="30">
+        <img src="https://flagcdn.com/w40/mx.png" alt="México" width="40" height="30">
+        <img src="https://flagcdn.com/w40/us.png" alt="Estados Unidos" width="40" height="30">
+      </div>
+      <div class="topbar__account">
+        <div class="profile" id="profileChip"></div>
+        <button class="topbar__ghost" id="switchUser">Cambiar usuario</button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" aria-pressed="false">
+          <svg class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+          </svg>
+          <svg class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2" />
+            <path d="M12 20v2" />
+            <path d="M4.93 4.93l1.41 1.41" />
+            <path d="M17.66 17.66l1.41 1.41" />
+            <path d="M2 12h2" />
+            <path d="M20 12h2" />
+            <path d="M6.34 17.66l-1.41 1.41" />
+            <path d="M19.07 4.93l-1.41 1.41" />
+          </svg>
+        </button>
+        <button class="topbar__ghost" id="reset">Reiniciar</button>
+      </div>
     </div>
-  </div>
-</header>
+    <nav class="tabs">
+      <button class="tab tab--active" data-tab="groups">Grupos</button>
+      <button class="tab" data-tab="ko">Eliminatorias</button>
+    </nav>
+    <div class="bar">
+      <div class="progress">
+        <div class="progress__bar">
+          <div class="progress__fill" id="bar"></div>
+        </div><span class="progress__label" id="prog">0 / 72</span>
+      </div>
+      <div class="live">
+        <label class="switch"><input type="checkbox" id="liveToggle" checked><span
+            class="switch__track"></span>Resultados oficiales</label>
+        <span class="live__status" id="liveStatus"></span>
+        <button class="live__refresh" id="refresh">Actualizar</button>
+      </div>
+    </div>
+  </header>
 
-<main>
-  <section class="view" id="view-groups"><div class="board" id="board"></div><p class="note" id="note"></p></section>
-  <section class="view" id="view-ko" hidden></section>
-</main>
+  <main>
+    <section class="view" id="view-groups">
+      <div class="board" id="board"></div>
+      <p class="note" id="note"></p>
+    </section>
+    <section class="view" id="view-ko" hidden></section>
+  </main>
 
-<script type="module" src="JS/main.js"></script>
+  <script type="module" src="JS/main.js"></script>
 </body>
+
 </html>
