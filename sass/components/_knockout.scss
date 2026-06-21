@@ -177,7 +177,10 @@
   color: var(--color-muted);
 
   &__icon {
-    font-size: 30px;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    color: var(--color-muted);
   }
 
   &__title {

@@ -1,0 +1,32 @@
+{
+    "name": "Mundial 2026 - Fixture interactivo",
+    "short_name": "Mundial 2026",
+    "description": "Predictor interactivo del Mundial 2026 con resultados oficiales en vivo",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#0B1220",
+    "theme_color": "#0B1220",
+    "lang": "es-AR",
+    "icons": [
+        {
+            "src": "img/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "img/seal.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}

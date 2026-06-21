@@ -198,9 +198,14 @@
   }
 
   &__count {
-    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    vertical-align: middle;
     opacity: .75;
-    font-weight: 600;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
   }
 }
 
