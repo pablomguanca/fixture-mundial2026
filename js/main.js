@@ -112,11 +112,15 @@ function onScoreInput(event) {
   requestAnimationFrame(() => {
     const next = document.querySelector(`.score[data-g="${g}"][data-m="${m}"][data-s="${s}"]`);
     if (next) {
-      next.focus();
       next.value = value;
+      next.focus();
       next.setSelectionRange(next.value.length, next.value.length);
     }
   });
+  const r = state.results[key];
+  if (r && r.h !== "" && r.a !== "" && window.Swal) {
+    setTimeout(() => confirmScore(g, m), 300);
+  }
   persist();
 }
 
