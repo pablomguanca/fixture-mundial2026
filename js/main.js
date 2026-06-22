@@ -201,21 +201,13 @@ function onReset() {
     : (confirm("¿Borrar tus pronósticos?") && (state.results = {}, state.ko = {}, state.tp = null, render(), persist()));
 }
 
-function onScorersSearch(event) {
-  const q = event.target.value.toLowerCase().trim();
-  const rows = document.querySelectorAll("#scorersList .scorer");
-  let visible = 0;
-  rows.forEach(row => {
-    const match = !q || row.dataset.search.includes(q);
-    row.hidden = !match;
-    if (match) visible++;
-  });
-  const empty = $("#scorersEmpty");
-  if (empty) empty.hidden = visible > 0;
+function onDocumentInput(event) {
+  if (event.target.id === "scorersSearch") { onScorersSearch(event); return; }
+  onScoreInput(event);
 }
 
 function bindEvents() {
-  document.addEventListener("input", onScoreInput);
+  document.addEventListener("input", onDocumentInput);
   document.addEventListener("click", onBoardClick);
   document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => onTabClick(tab)));
   $("#liveToggle").addEventListener("change", onLiveToggle);
@@ -223,9 +215,6 @@ function bindEvents() {
   $("#reset").addEventListener("click", onReset);
   $("#themeToggle").addEventListener("click", onThemeToggle);
   $("#switchUser").addEventListener("click", openGate);
-  document.addEventListener("input", e => {
-    if (e.target.id === "scorersSearch") onScorersSearch(e);
-  });
 }
 
 function onThemeToggle() {
