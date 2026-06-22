@@ -1,4 +1,4 @@
-export const SCORING = { exact: 3, winner: 1, miss: 0 };
+export const SCORING = { exact: 6, winner: 3, miss: 0 };
 
 export function calcPoints(prediction, official) {
     if (!prediction || prediction.h === "" || prediction.a === "") return null;

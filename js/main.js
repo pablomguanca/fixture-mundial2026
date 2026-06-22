@@ -128,15 +128,14 @@ async function confirmScore(g, m) {
   const key = matchKey(g, m);
   const r = state.results[key];
   if (!r || r.h === "" || r.a === "") return;
-  const { GROUPS } = await import("./data/groups.js");
-  const { PAIRS } = await import("./data/groups.js");
+  const { GROUPS, PAIRS } = await import("./data/groups.js");
   const { TEAMS } = await import("./data/teams.js");
   const teams = GROUPS[g];
   const [hi, ai] = PAIRS[Number(m)];
   const home = TEAMS[teams[hi]].n;
   const away = TEAMS[teams[ai]].n;
-  window.Swal.fire({
-    title: "¿Confirmás el pronóstico?",
+  const result = await window.Swal.fire({
+    title: "¿Confirmás tu pronóstico?",
     html: `<b>${home} ${r.h} – ${r.a} ${away}</b>`,
     icon: "question",
     showCancelButton: true,
@@ -147,6 +146,17 @@ async function confirmScore(g, m) {
     confirmButtonColor: "var(--color-accent)",
     cancelButtonColor: "var(--color-flare)"
   });
+  if (result.isConfirmed) {
+    window.Swal.fire({
+      title: "¡Pronóstico guardado!",
+      html: `<b>${home} ${r.h} – ${r.a} ${away}</b>`,
+      icon: "success",
+      timer: 1800,
+      showConfirmButton: false,
+      background: "var(--color-surface)",
+      color: "var(--color-text)"
+    });
+  }
 }
 
 function onBoardClick(event) {

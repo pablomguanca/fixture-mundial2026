@@ -9,6 +9,10 @@
   border-bottom: 1px solid var(--color-line);
   padding: 14px 16px 12px;
 
+  @media (min-width: 340px) and (max-width: 1024px) {
+    position: relative;
+  }
+
   &__row {
     display: flex;
     align-items: center;
@@ -191,6 +195,12 @@
   transition: $transition;
   text-align: center;
 
+  [data-theme="light"] & {
+    color: rgba(6, 56, 0, 0.873);
+    background: transparent;
+    border: 0.3px solid rgba(47, 47, 47, 0.234);
+  }
+
   svg {
     width: 13px;
     height: 13px;
@@ -202,6 +212,12 @@
     background: rgba(0, 0, 0, .35);
     box-shadow: 0 6px 12px -10px var(--color-accent);
     border: solid 0.3px var(--color-accent);
+
+    [data-theme="light"] & {
+      color: rgb(255, 255, 255);
+      background:rgb(19, 224, 0) ;
+      border: 0.3px solid rgb(18, 130, 6);
+    }
   }
 
   &:not(&--active):hover {

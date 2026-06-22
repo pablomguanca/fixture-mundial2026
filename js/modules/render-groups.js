@@ -23,16 +23,18 @@ function standingsRow(row, index, qualifiedThirds) {
 
 function pointsBadge(pts) {
   if (pts === null) return "";
-  if (pts === 3) return `<span class="match__pts match__pts--exact">+3</span>`;
-  if (pts === 1) return `<span class="match__pts match__pts--winner">+1</span>`;
+  if (pts === 6) return `<span class="match__pts match__pts--exact">+6</span>`;
+  if (pts === 3) return `<span class="match__pts match__pts--winner">+3</span>`;
   return `<span class="match__pts match__pts--miss">0</span>`;
 }
 
 function predictionRow(prediction, official) {
-  if (!official || !official.finished) return "";
   if (!prediction || prediction.h === "" || prediction.a === "") return "";
-  const pts = calcPoints(prediction, official);
-  return `<span class="match__prediction">${pointsBadge(pts)}<span class="match__pred-label">Tu pronóstico: ${prediction.h} – ${prediction.a}</span></span>`;
+  if (official && official.finished) {
+    const pts = calcPoints(prediction, official);
+    return `<span class="match__prediction">${pointsBadge(pts)}<span class="match__pred-label">Tu pronóstico: ${prediction.h} – ${prediction.a}</span></span>`;
+  }
+  return `<span class="match__prediction"><span class="match__pred-label match__pred-label--pending">Tu pronóstico: ${prediction.h} – ${prediction.a}</span></span>`;
 }
 
 function fixtureRow(state, g, pairIndex) {
