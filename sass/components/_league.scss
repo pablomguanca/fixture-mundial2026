@@ -1,0 +1,229 @@
+@use "../abstracts/variables" as *;
+
+.league {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 16px 48px;
+}
+
+.league__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.league__title {
+    font-family: $font-display;
+    font-size: 22px;
+    letter-spacing: .01em;
+}
+
+.league__code {
+    font-size: 12px;
+    color: var(--color-muted);
+
+    b {
+        color: var(--color-text);
+        font-family: $font-display;
+        letter-spacing: .1em;
+    }
+}
+
+.league__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rank__row {
+    display: grid;
+    grid-template-columns: 32px 36px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: $radius;
+    padding: 12px 14px;
+    transition: background $transition-fast;
+
+    &--vos {
+        border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+        background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+    }
+}
+
+.rank__pos {
+    font-family: $font-display;
+    font-size: 18px;
+    color: var(--color-muted);
+    text-align: center;
+    line-height: 1;
+}
+
+.rank__medal {
+    font-size: 20px;
+    text-align: center;
+    line-height: 1;
+}
+
+.rank__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: none;
+
+    &--initials {
+        display: grid;
+        place-items: center;
+        background: var(--color-surface-2);
+        color: var(--color-accent);
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid var(--color-line);
+    }
+}
+
+.rank__name {
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank__badge {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--color-bg);
+    background: var(--color-accent);
+    border-radius: $radius-pill;
+    padding: 2px 7px;
+    flex: none;
+}
+
+.rank__pts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    font-family: $font-display;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--color-accent);
+    min-width: 40px;
+    text-align: center;
+}
+
+.rank__label {
+    font-family: $font-body;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.league-gate {
+    max-width: 400px;
+    margin: 32px auto;
+    padding: 0 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.league-gate__section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: $radius;
+    padding: 20px;
+    margin-bottom: 0;
+}
+
+.league-gate__title {
+    font-family: $font-display;
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+.league-gate__hint {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-bottom: 14px;
+}
+
+.league-gate__form {
+    display: flex;
+    gap: 8px;
+}
+
+.league-gate__input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: $radius-sm;
+    border: 1px solid var(--color-line);
+    background: var(--score-bg);
+    color: var(--color-text);
+    font-size: 14px;
+    font-family: $font-body;
+    transition: $transition-fast;
+
+    &::placeholder {
+        color: var(--color-muted);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--color-accent);
+    }
+}
+
+.league-gate__btn {
+    height: 42px;
+    padding: 0 16px;
+    border-radius: $radius-sm;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    font-weight: 800;
+    font-size: 14px;
+    font-family: $font-body;
+    transition: $transition-fast;
+    flex: none;
+    cursor: pointer;
+    border: none;
+
+    &:hover {
+        filter: brightness(1.08);
+    }
+}
+
+.league-gate__divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    margin: 12px 0;
+
+    &::before,
+    &::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--color-line);
+    }
+}
