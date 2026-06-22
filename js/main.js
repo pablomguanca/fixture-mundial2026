@@ -101,16 +101,22 @@ function onScoreInput(event) {
   if (!input || input.disabled) return;
   let value = input.value.replace(/\D/g, "");
   if (value.length > 2) value = value.slice(0, 2);
-  input.value = value;
-  const key = matchKey(input.dataset.g, input.dataset.m);
-  state.results[key] = state.results[key] || { h: "", a: "" };
-  state.results[key][input.dataset.s] = value;
-  if (groupsComplete(state)) { state.ko = {}; state.tp = null; }
   const g = input.dataset.g, m = input.dataset.m, s = input.dataset.s;
+  const key = matchKey(g, m);
+  state.results[key] = state.results[key] || { h: "", a: "" };
+  state.results[key][s] = value;
+  if (groupsComplete(state)) { state.ko = {}; state.tp = null; }
   board.innerHTML = renderGroups(state);
   renderProgress();
   renderNote();
-  focusScore(g, m, s);
+  requestAnimationFrame(() => {
+    const next = document.querySelector(`.score[data-g="${g}"][data-m="${m}"][data-s="${s}"]`);
+    if (next) {
+      next.focus();
+      next.value = value;
+      next.setSelectionRange(next.value.length, next.value.length);
+    }
+  });
   persist();
 }
 
@@ -226,7 +232,7 @@ function onDocumentInput(event) {
 }
 
 function bindEvents() {
-  document.addEventListener("input", onDocumentInput);
+  document.addEventListener("change", onDocumentInput);
   document.addEventListener("click", onBoardClick);
   document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => onTabClick(tab)));
   $("#liveToggle").addEventListener("change", onLiveToggle);
@@ -301,12 +307,12 @@ function loadSweetAlert() {
 async function init() {
   initTheme();
   $("#themeToggle").setAttribute("aria-pressed", getTheme() === "light");
-  await loadSweetAlert();
   bindEvents();
   initGate();
   const profile = getProfile();
   if (profile) activateProfile(profile);
   else openGate();
+  loadSweetAlert();
 }
 
 init();

@@ -41,7 +41,10 @@ function fixtureRow(state, g, pairIndex) {
   const home = teams[hi];
   const away = teams[ai];
   const key = matchKey(g, pairIndex);
+
   const result = effectiveResult(state, key);
+  const rawResult = state.results[key] || { h: "", a: "" };
+
   const official = state.useLive ? state.live[key] : null;
   const locked = isLocked(state, key);
   const officialFinished = official && official.finished;
@@ -51,11 +54,11 @@ function fixtureRow(state, g, pairIndex) {
     ? `<p class="fixtures__day">Fecha ${DAYS[pairIndex]}</p>` : "";
 
   const scoreClass = officialFinished ? "score--official" : officialLive ? "score--live" : "";
-  const homeFilled = !locked && result.h !== "" ? "score--filled" : "";
-  const awayFilled = !locked && result.a !== "" ? "score--filled" : "";
+  const homeFilled = !locked && rawResult.h !== "" ? "score--filled" : "";
+  const awayFilled = !locked && rawResult.a !== "" ? "score--filled" : "";
   const disabled = locked ? "disabled" : "";
-  const hVal = officialFinished || officialLive ? (official.h === "" ? "–" : official.h) : (locked ? "–" : result.h);
-  const aVal = officialFinished || officialLive ? (official.a === "" ? "–" : official.a) : (locked ? "–" : result.a);
+  const hVal = officialFinished || officialLive ? (official.h === "" ? "–" : official.h) : (locked ? "–" : rawResult.h);
+  const aVal = officialFinished || officialLive ? (official.a === "" ? "–" : official.a) : (locked ? "–" : rawResult.a);
 
   const tagHtml = label ? `<span class="match__tag ${officialLive && !officialFinished ? "match__tag--live" : ""}">${label}</span>` : "";
   const predHtml = predictionRow(state.results[key], official);
