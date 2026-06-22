@@ -5,15 +5,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0B1220">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mundial 2026">
   <title>Mundial 2026 · Fixture interactivo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/img/logo/android-chrome-512x512.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/logo/android-chrome-512x512.png"">
+  <link rel="icon" type="image/png" href="assets/img/logo/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/logo/android-chrome-512x512.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/img/logo/android-chrome-512x512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/img/logo/favicon-32x32.png">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
@@ -39,8 +44,11 @@
   <header class="topbar">
     <div class="topbar__row">
       <div class="topbar__brand">
-        <span class="topbar__kicker">FIFA World Cup</span>
-        <h1 class="topbar__title">Mundial 20<span>26</span></h1>
+        <img class="topbar__seal" src="assets/img/logo/seal.svg" alt="" width="40" height="40">
+        <div class="topbar__wordmark">
+          <span class="topbar__kicker">FIFA World Cup</span>
+          <h1 class="topbar__title">Mundial 20<span>26</span></h1>
+        </div>
       </div>
       <div class="topbar__hosts" aria-label="Anfitriones">
         <img src="https://flagcdn.com/w40/ca.png" alt="Canadá" width="40" height="30">
@@ -71,21 +79,37 @@
         <button class="topbar__ghost" id="reset">Reiniciar</button>
       </div>
     </div>
+
     <nav class="tabs">
       <button class="tab tab--active" data-tab="groups">Grupos</button>
       <button class="tab" data-tab="ko">Eliminatorias</button>
+      <button class="tab" data-tab="scorers">Goleadores</button>
     </nav>
+
     <div class="bar">
       <div class="progress">
         <div class="progress__bar">
           <div class="progress__fill" id="bar"></div>
-        </div><span class="progress__label" id="prog">0 / 72</span>
+        </div>
+        <span class="progress__label" id="prog">0 / 72</span>
       </div>
       <div class="live">
-        <label class="switch"><input type="checkbox" id="liveToggle" checked><span
-            class="switch__track"></span>Resultados oficiales</label>
+        <label class="switch">
+          <input type="checkbox" id="liveToggle" checked>
+          <span class="switch__track"></span>
+          Resultados oficiales
+        </label>
         <span class="live__status" id="liveStatus"></span>
-        <button class="live__refresh" id="refresh">Actualizar</button>
+        <button class="live__refresh" id="refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
+          </svg>
+          Actualizar
+        </button>
       </div>
     </div>
   </header>
@@ -96,6 +120,7 @@
       <p class="note" id="note"></p>
     </section>
     <section class="view" id="view-ko" hidden></section>
+    <section class="view" id="view-scorers" hidden></section>
   </main>
 
   <script type="module" src="js/main.js"></script>
