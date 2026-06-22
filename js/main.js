@@ -1,8 +1,9 @@
 import { readKey, writeKey, debounce } from "./modules/storage.js";
 import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
 import { getProfile, initials, renderGoogleButton, signInAsGuest, googleConfigured } from "./modules/auth.js";
-import { fetchLive } from "./modules/live.js";
+import { fetchScores } from "./modules/api-football.js";
 import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./modules/standings.js";
+import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
 import { renderKnockout } from "./modules/render-knockout.js";
 
@@ -37,7 +38,8 @@ function updateLiveStatus(forced) {
   if (forced === "loading") { el.innerHTML = '<span class="live__dot"></span>buscando…'; return; }
   if (forced === "error") { el.innerHTML = '<span class="live__dot live__dot--off"></span>sin conexión'; return; }
   const n = Object.keys(state.live).length;
-  el.innerHTML = `<span class="live__dot"></span>${n} oficiales · ${relTime(state.liveAt) || "—"}`;
+  const pts = totalPoints(state);
+  el.innerHTML = `<span class="live__dot"></span>${n} oficiales · ${relTime(state.liveAt) || "—"} · <b>${pts} pts</b>`;
 }
 
 function renderProgress() {
@@ -51,9 +53,11 @@ function renderProgress() {
 }
 
 function renderNote() {
+  const pts = totalPoints(state);
+  const ptsLabel = pts > 0 ? ` · <b>${pts} puntos</b> hasta ahora` : "";
   $("#note").innerHTML = groupsComplete(state)
-    ? "<b>Listo:</b> grupos completos. Pasá a Eliminatorias y armá tu camino al título."
-    : 'Los partidos jugados muestran el <b>resultado oficial</b> (Final, en dorado); el resto es tu pronóstico editable. La tabla ordena por Pts → DG → GF. El bracket se desbloquea con los 72 partidos.';
+    ? `<b>Listo:</b> grupos completos${ptsLabel}. Pasá a Eliminatorias y armá tu camino al título.`
+    : `Los partidos en juego o finalizados se bloquean automáticamente. Resultado oficial arriba, tu pronóstico abajo con puntaje${ptsLabel}. El bracket se desbloquea con los 72 partidos.`;
 }
 
 function render() {
@@ -67,11 +71,13 @@ async function refreshLive() {
   if (fetching || !state.useLive) return;
   fetching = true;
   updateLiveStatus("loading");
-  const live = await fetchLive();
+  const hasLive = Object.values(state.live).some(m => m.live);
+  const scope = hasLive ? "live" : "all";
+  const result = await fetchScores(scope);
   fetching = false;
-  if (live) {
-    state.live = live;
-    state.liveAt = Date.now();
+  if (result) {
+    state.live = result.matches;
+    state.liveAt = result.updatedAt;
     render();
     persist();
   } else {
@@ -81,7 +87,10 @@ async function refreshLive() {
 
 function startPoll() {
   clearInterval(pollTimer);
-  if (state.useLive) pollTimer = setInterval(refreshLive, 5 * 60 * 1000);
+  if (state.useLive) {
+    const hasLive = Object.values(state.live).some(m => m.live);
+    pollTimer = setInterval(refreshLive, hasLive ? 60 * 1000 : 5 * 60 * 1000);
+  }
 }
 
 function focusScore(g, m, side) {
@@ -89,7 +98,7 @@ function focusScore(g, m, side) {
   if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
 }
 
-function onScoreInput(event) {
+async function onScoreInput(event) {
   const input = event.target.closest(".score");
   if (!input || input.disabled) return;
   let value = input.value.replace(/\D/g, "");
@@ -105,6 +114,31 @@ function onScoreInput(event) {
   renderNote();
   focusScore(g, m, s);
   persist();
+}
+
+async function confirmScore(g, m) {
+  const key = matchKey(g, m);
+  const r = state.results[key];
+  if (!r || r.h === "" || r.a === "") return;
+  const { GROUPS } = await import("./data/groups.js");
+  const { PAIRS } = await import("./data/groups.js");
+  const { TEAMS } = await import("./data/teams.js");
+  const teams = GROUPS[g];
+  const [hi, ai] = PAIRS[Number(m)];
+  const home = TEAMS[teams[hi]].n;
+  const away = TEAMS[teams[ai]].n;
+  window.Swal.fire({
+    title: "¿Confirmás el pronóstico?",
+    html: `<b>${home} ${r.h} – ${r.a} ${away}</b>`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Confirmar",
+    cancelButtonText: "Cancelar",
+    background: "var(--color-surface)",
+    color: "var(--color-text)",
+    confirmButtonColor: "var(--color-accent)",
+    cancelButtonColor: "var(--color-flare)"
+  });
 }
 
 function onBoardClick(event) {
@@ -124,6 +158,11 @@ function onBoardClick(event) {
     state.tp = state.tp === tpBtn.dataset.tp ? null : tpBtn.dataset.tp;
     viewKo.innerHTML = renderKnockout(state);
     persist();
+    return;
+  }
+  const confirmBtn = event.target.closest(".match__confirm");
+  if (confirmBtn) {
+    confirmScore(confirmBtn.dataset.g, confirmBtn.dataset.m);
   }
 }
 
@@ -146,12 +185,20 @@ function onLiveToggle(event) {
 }
 
 function onReset() {
-  if (!confirm("¿Borrar tus pronósticos y empezar de cero? Los resultados oficiales se mantienen.")) return;
-  state.results = {};
-  state.ko = {};
-  state.tp = null;
-  render();
-  persist();
+  window.Swal
+    ? window.Swal.fire({
+        title: "¿Reiniciar pronósticos?",
+        text: "Se borran todos tus resultados. Los datos oficiales se mantienen.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, borrar",
+        cancelButtonText: "Cancelar",
+        background: "var(--color-surface)",
+        color: "var(--color-text)",
+        confirmButtonColor: "var(--color-flare)",
+        cancelButtonColor: "var(--color-muted)"
+      }).then(r => { if (r.isConfirmed) { state.results = {}; state.ko = {}; state.tp = null; render(); persist(); } })
+    : (confirm("¿Borrar tus pronósticos?") && (state.results = {}, state.ko = {}, state.tp = null, render(), persist()));
 }
 
 function bindEvents() {
@@ -178,13 +225,8 @@ function renderProfileChip(profile) {
   chip.innerHTML = `${avatar}<span class="profile__name">${profile.name}</span>`;
 }
 
-function openGate() {
-  $("#authGate").hidden = false;
-}
-
-function closeGate() {
-  $("#authGate").hidden = true;
-}
+function openGate() { $("#authGate").hidden = false; }
+function closeGate() { $("#authGate").hidden = true; }
 
 async function activateProfile(profile) {
   renderProfileChip(profile);
@@ -217,9 +259,24 @@ function initGate() {
   });
 }
 
-function init() {
+function loadSweetAlert() {
+  return new Promise(resolve => {
+    if (window.Swal) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
+    s.onload = resolve;
+    document.head.appendChild(s);
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css";
+    document.head.appendChild(l);
+  });
+}
+
+async function init() {
   initTheme();
   $("#themeToggle").setAttribute("aria-pressed", getTheme() === "light");
+  await loadSweetAlert();
   bindEvents();
   initGate();
   const profile = getProfile();
