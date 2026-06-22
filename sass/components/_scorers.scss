@@ -1,0 +1,132 @@
+@use "../abstracts/variables" as *;
+
+.scorers {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 16px 48px;
+}
+
+.scorers__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.scorers__title {
+    font-family: $font-display;
+    font-size: 22px;
+    letter-spacing: .01em;
+}
+
+.scorers__count {
+    font-size: 12px;
+    color: var(--color-muted);
+}
+
+.scorers__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scorer {
+    display: grid;
+    grid-template-columns: 28px 28px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: $radius;
+    padding: 12px 14px;
+    transition: background $transition-fast;
+
+    &:hover {
+        background: var(--color-surface-2);
+    }
+
+    &--podium {
+        border-color: color-mix(in srgb, var(--color-gold) 35%, transparent);
+
+        .scorer__rank {
+            color: var(--color-gold);
+        }
+    }
+
+    &__rank {
+        font-family: $font-display;
+        font-size: 18px;
+        color: var(--color-muted);
+        text-align: center;
+        line-height: 1;
+    }
+
+    &__flag {
+        display: flex;
+        align-items: center;
+
+        .flag {
+            width: 22px;
+            height: 15px;
+            border-radius: 3px;
+        }
+    }
+
+    &__flag-placeholder {
+        display: inline-block;
+        width: 22px;
+        height: 15px;
+    }
+
+    &__info {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+    }
+
+    &__name {
+        font-weight: 700;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__team {
+        font-size: 11px;
+        color: var(--color-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    &__minutes {
+        font-variant-numeric: tabular-nums;
+        opacity: .8;
+    }
+
+    &__goals {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        font-family: $font-display;
+        font-size: 26px;
+        line-height: 1;
+        color: var(--color-accent);
+        min-width: 36px;
+        text-align: center;
+    }
+
+    &__label {
+        font-family: $font-body;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--color-muted);
+    }
+}
