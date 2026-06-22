@@ -27,7 +27,8 @@ function scorerRow(scorer, rank, teamIndex) {
         ? `<span class="scorer__minutes">${scorer.minutes.map(m => m + "'").join(" · ")}</span>`
         : "";
     const podium = rank <= 3 ? " scorer--podium" : "";
-    return `<div class="scorer${podium}">
+    const searchData = `${scorer.name} ${teamName}`.toLowerCase();
+    return `<div class="scorer${podium}" data-search="${searchData}">
     <span class="scorer__rank">${rank}</span>
     <span class="scorer__flag">${flag}</span>
     <span class="scorer__info">
@@ -58,6 +59,14 @@ export function renderScorers(state) {
         <h2 class="scorers__title">Goleadores</h2>
         <span class="scorers__count">${scorers.length} jugadores · ${totalGoals} goles</span>
     </header>
-        <div class="scorers__list">${rows}</div>
+    <div class="scorers__search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input class="scorers__input" id="scorersSearch" type="search" placeholder="Buscar jugador o selección…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="scorers__list" id="scorersList">${rows}</div>
+    <p class="scorers__empty" id="scorersEmpty" hidden>No se encontraron resultados.</p>
     </div>`;
 }
