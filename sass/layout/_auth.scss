@@ -51,10 +51,28 @@
   font-weight: 500;
 }
 
-.auth-gate__google {
+.auth-gate__google-btn {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
+  gap: 10px;
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--color-line);
+  border-radius: $radius-pill;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: $font-body;
+  cursor: pointer;
+  transition: $transition-fast;
+  margin-bottom: 4px;
+
+  &:hover {
+    border-color: var(--color-accent);
+    background: var(--color-surface-2);
+  }
 }
 
 .auth-gate__divider {
