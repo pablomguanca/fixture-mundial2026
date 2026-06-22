@@ -2,6 +2,7 @@ import { TEAMS } from "../data/teams.js";
 import { GROUPS, LETTERS, PAIRS, DAYS } from "../data/groups.js";
 import { flagImg } from "./flag.js";
 import { computeGroup, effectiveResult, isOfficial, matchKey, groupsComplete, seedPool } from "./standings.js";
+import { calcPoints, isLocked, statusLabel } from "./scoring.js";
 
 function standingsRow(row, index, qualifiedThirds) {
   let cls = "row";
@@ -20,6 +21,20 @@ function standingsRow(row, index, qualifiedThirds) {
   </div>`;
 }
 
+function pointsBadge(pts) {
+  if (pts === null) return "";
+  if (pts === 3) return `<span class="match__pts match__pts--exact">+3</span>`;
+  if (pts === 1) return `<span class="match__pts match__pts--winner">+1</span>`;
+  return `<span class="match__pts match__pts--miss">0</span>`;
+}
+
+function predictionRow(prediction, official) {
+  if (!official || !official.finished) return "";
+  if (!prediction || prediction.h === "" || prediction.a === "") return "";
+  const pts = calcPoints(prediction, official);
+  return `<span class="match__prediction">${pointsBadge(pts)}<span class="match__pred-label">Tu pronóstico: ${prediction.h} – ${prediction.a}</span></span>`;
+}
+
 function fixtureRow(state, g, pairIndex) {
   const teams = GROUPS[g];
   const [hi, ai] = PAIRS[pairIndex];
@@ -27,20 +42,35 @@ function fixtureRow(state, g, pairIndex) {
   const away = teams[ai];
   const key = matchKey(g, pairIndex);
   const result = effectiveResult(state, key);
-  const official = isOfficial(state, key);
+  const official = state.useLive ? state.live[key] : null;
+  const locked = isLocked(state, key);
+  const officialFinished = official && official.finished;
+  const officialLive = official && official.live;
+  const label = statusLabel(official);
   const dayHeading = pairIndex === 0 || DAYS[pairIndex] !== DAYS[pairIndex - 1]
     ? `<p class="fixtures__day">Fecha ${DAYS[pairIndex]}</p>` : "";
-  const officialClass = official ? "score--official" : "";
-  const homeFilled = !official && result.h !== "" ? "score--filled" : "";
-  const awayFilled = !official && result.a !== "" ? "score--filled" : "";
-  const disabled = official ? "disabled" : "";
+
+  const scoreClass = officialFinished ? "score--official" : officialLive ? "score--live" : "";
+  const homeFilled = !locked && result.h !== "" ? "score--filled" : "";
+  const awayFilled = !locked && result.a !== "" ? "score--filled" : "";
+  const disabled = locked ? "disabled" : "";
+  const hVal = officialFinished || officialLive ? (official.h === "" ? "–" : official.h) : (locked ? "–" : result.h);
+  const aVal = officialFinished || officialLive ? (official.a === "" ? "–" : official.a) : (locked ? "–" : result.a);
+
+  const tagHtml = label ? `<span class="match__tag ${officialLive && !officialFinished ? "match__tag--live" : ""}">${label}</span>` : "";
+  const predHtml = predictionRow(state.results[key], official);
+
   return `${dayHeading}<div class="match">
     <span class="match__team match__team--home"><span class="match__name" title="${TEAMS[home].n}">${TEAMS[home].n}</span>${flagImg(home, 40)}</span>
-    <span class="match__score"><span class="match__row">
-      <input class="score ${officialClass} ${homeFilled}" inputmode="numeric" maxlength="2" placeholder="–" value="${result.h}" data-g="${g}" data-m="${pairIndex}" data-s="h" ${disabled} aria-label="${TEAMS[home].n}">
-      <span class="score__sep">:</span>
-      <input class="score ${officialClass} ${awayFilled}" inputmode="numeric" maxlength="2" placeholder="–" value="${result.a}" data-g="${g}" data-m="${pairIndex}" data-s="a" ${disabled} aria-label="${TEAMS[away].n}">
-    </span>${official ? '<span class="match__tag">Final</span>' : ""}</span>
+    <span class="match__score">
+      <span class="match__row">
+        <input class="score ${scoreClass} ${homeFilled}" inputmode="numeric" maxlength="2" placeholder="–" value="${hVal}" data-g="${g}" data-m="${pairIndex}" data-s="h" ${disabled} aria-label="${TEAMS[home].n}">
+        <span class="score__sep">:</span>
+        <input class="score ${scoreClass} ${awayFilled}" inputmode="numeric" maxlength="2" placeholder="–" value="${aVal}" data-g="${g}" data-m="${pairIndex}" data-s="a" ${disabled} aria-label="${TEAMS[away].n}">
+      </span>
+      ${tagHtml}
+      ${predHtml}
+    </span>
     <span class="match__team">${flagImg(away, 40)}<span class="match__name" title="${TEAMS[away].n}">${TEAMS[away].n}</span></span>
   </div>`;
 }
