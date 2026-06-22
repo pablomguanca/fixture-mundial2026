@@ -17,13 +17,21 @@
 
 .auth-gate__card {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: $radius;
   box-shadow: var(--shadow);
   padding: 28px 24px;
   text-align: center;
+
+  @media (min-width: 340px) and (max-width: 430px) {
+    max-width: 300px;
+  }
+
+  @media (min-width: 431px) and (max-width: 600px) {
+    max-width: 340px;
+  }
 }
 
 .auth-gate__kicker {
