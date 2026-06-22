@@ -1,6 +1,6 @@
 const KEY = "wc2026:profile";
 
-export const GOOGLE_CLIENT_ID = "TU_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "334140254771-055i4rboumeva01lrqeu7h0rj1rdn3dk.apps.googleusercontent.com";
 
 export function getProfile() {
   try {
