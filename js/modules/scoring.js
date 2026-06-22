@@ -23,11 +23,31 @@ export function totalPoints(state) {
     return pts;
 }
 
+function parseKickoff(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4}-\d{2}-\d{2})T(\d{1,2}):(\d{2})\s*UTC([+-]\d+)$/);
+    if (!m) return null;
+    const offsetHours = parseInt(m[4], 10);
+    const utcMs = Date.UTC(
+        parseInt(m[1]),
+        parseInt(m[1].split("-")[1]) - 1,
+        parseInt(m[1].split("-")[2]),
+        parseInt(m[2]) - offsetHours,
+        parseInt(m[3])
+    );
+    return utcMs;
+}
+
 export function isLocked(state, key) {
     if (!state.useLive) return false;
     const live = state.live[key];
     if (!live) return false;
-    return live.live || live.finished;
+    if (live.finished || live.live) return true;
+    if (live.kickoff) {
+        const ko = parseKickoff(live.kickoff);
+        if (ko && Date.now() >= ko) return true;
+    }
+    return false;
 }
 
 export function statusLabel(liveData) {
