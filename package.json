@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "build": "sass sass/main.scss css/styles.css --style=compressed --no-source-map"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0"
+  }
+}
