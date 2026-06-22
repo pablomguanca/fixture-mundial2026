@@ -96,7 +96,7 @@ function focusScore(g, m, side) {
   if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
 }
 
-async function onScoreInput(event) {
+function onScoreInput(event) {
   const input = event.target.closest(".score");
   if (!input || input.disabled) return;
   let value = input.value.replace(/\D/g, "");
@@ -201,8 +201,27 @@ function onReset() {
     : (confirm("¿Borrar tus pronósticos?") && (state.results = {}, state.ko = {}, state.tp = null, render(), persist()));
 }
 
+function onScorersSearch(event) {
+  const q = event.target.value.toLowerCase().trim();
+  const rows = document.querySelectorAll("#scorersList .scorer");
+
+  let visible = 0;
+
+  rows.forEach(row => {
+    const match = !q || row.dataset.search.includes(q);
+
+    row.style.display = match ? "" : "none";
+
+    if (match) visible++;
+  });
+
+  const empty = document.querySelector("#scorersEmpty");
+  if (empty) empty.hidden = visible > 0;
+}
+
 function onDocumentInput(event) {
   if (event.target.id === "scorersSearch") { onScorersSearch(event); return; }
+  if (!event.target.closest) return;
   onScoreInput(event);
 }
 
