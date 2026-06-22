@@ -1,7 +1,7 @@
 import { readKey, writeKey, debounce } from "./modules/storage.js";
 import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
 import { getProfile, initials, renderGoogleButton, signInAsGuest, googleConfigured } from "./modules/auth.js";
-import { fetchScores } from "./modules/api-football.js";
+import { fetchLive } from "./modules/live.js";
 import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./modules/standings.js";
 import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
@@ -71,13 +71,11 @@ async function refreshLive() {
   if (fetching || !state.useLive) return;
   fetching = true;
   updateLiveStatus("loading");
-  const hasLive = Object.values(state.live).some(m => m.live);
-  const scope = hasLive ? "live" : "all";
-  const result = await fetchScores(scope);
+  const result = await fetchLive();
   fetching = false;
   if (result) {
-    state.live = result.matches;
-    state.liveAt = result.updatedAt;
+    state.live = result;
+    state.liveAt = Date.now();
     render();
     persist();
   } else {
@@ -87,10 +85,7 @@ async function refreshLive() {
 
 function startPoll() {
   clearInterval(pollTimer);
-  if (state.useLive) {
-    const hasLive = Object.values(state.live).some(m => m.live);
-    pollTimer = setInterval(refreshLive, hasLive ? 60 * 1000 : 5 * 60 * 1000);
-  }
+  if (state.useLive) pollTimer = setInterval(refreshLive, 5 * 60 * 1000);
 }
 
 function focusScore(g, m, side) {
@@ -187,17 +182,17 @@ function onLiveToggle(event) {
 function onReset() {
   window.Swal
     ? window.Swal.fire({
-        title: "¿Reiniciar pronósticos?",
-        text: "Se borran todos tus resultados. Los datos oficiales se mantienen.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, borrar",
-        cancelButtonText: "Cancelar",
-        background: "var(--color-surface)",
-        color: "var(--color-text)",
-        confirmButtonColor: "var(--color-flare)",
-        cancelButtonColor: "var(--color-muted)"
-      }).then(r => { if (r.isConfirmed) { state.results = {}; state.ko = {}; state.tp = null; render(); persist(); } })
+      title: "¿Reiniciar pronósticos?",
+      text: "Se borran todos tus resultados. Los datos oficiales se mantienen.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, borrar",
+      cancelButtonText: "Cancelar",
+      background: "var(--color-surface)",
+      color: "var(--color-text)",
+      confirmButtonColor: "var(--color-flare)",
+      cancelButtonColor: "var(--color-muted)"
+    }).then(r => { if (r.isConfirmed) { state.results = {}; state.ko = {}; state.tp = null; render(); persist(); } })
     : (confirm("¿Borrar tus pronósticos?") && (state.results = {}, state.ko = {}, state.tp = null, render(), persist()));
 }
 
