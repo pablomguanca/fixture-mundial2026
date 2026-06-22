@@ -6,6 +6,7 @@ import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./m
 import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
 import { renderKnockout } from "./modules/render-knockout.js";
+import { renderScorers } from "./modules/render-scorers.js";
 
 const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
 
@@ -18,6 +19,7 @@ const $ = (selector) => document.querySelector(selector);
 const board = $("#board");
 const viewGroups = $("#view-groups");
 const viewKo = $("#view-ko");
+const viewScorers = $("#view-scorers");
 
 const persist = debounce(() => { if (storageKey) writeKey(storageKey, state); }, 250);
 
@@ -63,6 +65,7 @@ function renderNote() {
 function render() {
   board.innerHTML = renderGroups(state);
   if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
+  if (state.tab === "scorers") viewScorers.innerHTML = renderScorers(state);
   renderProgress();
   renderNote();
 }
@@ -166,7 +169,9 @@ function onTabClick(tab) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("tab--active", t === tab));
   viewGroups.hidden = state.tab !== "groups";
   viewKo.hidden = state.tab !== "ko";
+  viewScorers.hidden = state.tab !== "scorers";
   if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
+  if (state.tab === "scorers") viewScorers.innerHTML = renderScorers(state);
   persist();
 }
 
@@ -233,6 +238,7 @@ async function activateProfile(profile) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("tab--active", t.dataset.tab === state.tab));
   viewGroups.hidden = state.tab !== "groups";
   viewKo.hidden = state.tab !== "ko";
+  viewScorers.hidden = state.tab !== "scorers";
   render();
   if (state.useLive) refreshLive();
   startPoll();
