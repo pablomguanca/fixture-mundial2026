@@ -1,17 +1,21 @@
 import { readKey, writeKey, debounce } from "./modules/storage.js";
 import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
-import { getProfile, initials, renderGoogleButton, signInAsGuest, googleConfigured } from "./modules/auth.js";
+import { initials } from "./modules/auth.js";
 import { fetchLive } from "./modules/live.js";
 import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./modules/standings.js";
 import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
 import { renderKnockout } from "./modules/render-knockout.js";
 import { renderScorers } from "./modules/render-scorers.js";
+import { renderLeague, renderLeagueGate } from "./modules/render-league.js";
+import { signInWithGoogle, signOutUser, onAuthChanged } from "./modules/firebase.js";
+import { cargarPronosticos, guardarPronosticos } from "./modules/firestore.js";
+import { handleCrearLiga, handleUnirse, getLigaActiva, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
 
 const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
 
 let state = defaultState();
-let storageKey = null;
+let currentUser = null;
 let pollTimer = null;
 let fetching = false;
 
@@ -20,8 +24,25 @@ const board = $("#board");
 const viewGroups = $("#view-groups");
 const viewKo = $("#view-ko");
 const viewScorers = $("#view-scorers");
+const viewLeague = $("#view-league");
 
-const persist = debounce(() => { if (storageKey) writeKey(storageKey, state); }, 250);
+const persistFirestore = debounce(async () => {
+  if (!currentUser || currentUser.uid.startsWith("guest:")) return;
+  await guardarPronosticos(currentUser.uid, state.results);
+  const pts = totalPoints(state);
+  const liga = getLigaActiva();
+  if (liga) await sincronizarPuntos(currentUser.uid, liga, pts);
+}, 800);
+
+const persistLocal = debounce(() => {
+  if (!currentUser) return;
+  writeKey(`wc2026:guest:${currentUser.uid}`, state);
+}, 250);
+
+function persist() {
+  if (currentUser && !currentUser.uid.startsWith("guest:")) persistFirestore();
+  else persistLocal();
+}
 
 function relTime(ts) {
   if (!ts) return "";
@@ -36,6 +57,7 @@ function relTime(ts) {
 
 function updateLiveStatus(forced) {
   const el = $("#liveStatus");
+  if (!el) return;
   if (!state.useLive) { el.innerHTML = '<span class="live__dot live__dot--off"></span>modo manual'; return; }
   if (forced === "loading") { el.innerHTML = '<span class="live__dot"></span>buscando…'; return; }
   if (forced === "error") { el.innerHTML = '<span class="live__dot live__dot--off"></span>sin conexión'; return; }
@@ -46,10 +68,14 @@ function updateLiveStatus(forced) {
 
 function renderProgress() {
   const n = filledCount(state);
-  $("#bar").style.width = (n / 72 * 100) + "%";
-  $("#prog").textContent = `${n} / 72`;
+  const bar = $("#bar");
+  if (bar) bar.style.width = (n / 72 * 100) + "%";
+  const prog = $("#prog");
+  if (prog) prog.textContent = `${n} / 72`;
   document.querySelectorAll(".tab").forEach(tab => {
-    if (tab.dataset.tab === "ko") tab.innerHTML = groupsComplete(state) ? "Llaves" : '<span class="tab__count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Llaves';
+    if (tab.dataset.tab === "ko") tab.innerHTML = groupsComplete(state)
+      ? "Llaves"
+      : '<span class="tab__count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Llaves';
   });
   updateLiveStatus();
 }
@@ -57,7 +83,9 @@ function renderProgress() {
 function renderNote() {
   const pts = totalPoints(state);
   const ptsLabel = pts > 0 ? ` · <b>${pts} puntos</b> hasta ahora` : "";
-  $("#note").innerHTML = groupsComplete(state)
+  const note = $("#note");
+  if (!note) return;
+  note.innerHTML = groupsComplete(state)
     ? `<b>Listo:</b> grupos completos${ptsLabel}. Pasá a las Llaves y armá tu camino al título.`
     : `Los partidos en juego o finalizados se bloquean automáticamente. Resultado oficial arriba, tu pronóstico abajo con puntaje${ptsLabel}. El bracket se desbloquea con los 72 partidos.`;
 }
@@ -66,6 +94,7 @@ function render() {
   board.innerHTML = renderGroups(state);
   if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
   if (state.tab === "scorers") viewScorers.innerHTML = renderScorers(state);
+  if (state.tab === "league") renderLeagueView();
   renderProgress();
   renderNote();
 }
@@ -100,7 +129,7 @@ function onScoreInput(event) {
   const input = event.target.closest(".score");
   if (!input || input.disabled) return;
   let value = input.value.replace(/\D/g, "");
-  if (value.length > 2) value = value.slice(0, 2);
+  if (value.length > 1) value = value.slice(0, 1);
   const g = input.dataset.g, m = input.dataset.m, s = input.dataset.s;
   const key = matchKey(g, m);
   state.results[key] = state.results[key] || { h: "", a: "" };
@@ -111,11 +140,7 @@ function onScoreInput(event) {
   renderNote();
   requestAnimationFrame(() => {
     const next = document.querySelector(`.score[data-g="${g}"][data-m="${m}"][data-s="${s}"]`);
-    if (next) {
-      next.value = value;
-      next.focus();
-      next.setSelectionRange(next.value.length, next.value.length);
-    }
+    if (next) { next.value = value; next.focus(); next.setSelectionRange(next.value.length, next.value.length); }
   });
   const r = state.results[key];
   if (r && r.h !== "" && r.a !== "" && window.Swal) {
@@ -159,11 +184,29 @@ async function confirmScore(g, m) {
   }
 }
 
+function onScorersSearch(event) {
+  const q = event.target.value.toLowerCase().trim();
+  const rows = document.querySelectorAll("#scorersList .scorer");
+  let visible = 0;
+  rows.forEach(row => {
+    const match = !q || row.dataset.search.includes(q);
+    row.style.display = match ? "" : "none";
+    if (match) visible++;
+  });
+  const empty = document.querySelector("#scorersEmpty");
+  if (empty) empty.hidden = visible > 0;
+}
+
+function onDocumentInput(event) {
+  if (event.target.id === "scorersSearch") { onScorersSearch(event); return; }
+  if (!event.target.closest) return;
+  onScoreInput(event);
+}
+
 function onBoardClick(event) {
   const tieBtn = event.target.closest(".tie__team[data-c]");
   if (tieBtn) {
-    const round = Number(tieBtn.dataset.r);
-    const m = Number(tieBtn.dataset.m);
+    const round = Number(tieBtn.dataset.r), m = Number(tieBtn.dataset.m);
     const key = `${round}-${m}`;
     state.ko[key] = state.ko[key] === tieBtn.dataset.c ? undefined : tieBtn.dataset.c;
     invalidateDownstream(state);
@@ -176,11 +219,6 @@ function onBoardClick(event) {
     state.tp = state.tp === tpBtn.dataset.tp ? null : tpBtn.dataset.tp;
     viewKo.innerHTML = renderKnockout(state);
     persist();
-    return;
-  }
-  const confirmBtn = event.target.closest(".match__confirm");
-  if (confirmBtn) {
-    confirmScore(confirmBtn.dataset.g, confirmBtn.dataset.m);
   }
 }
 
@@ -190,8 +228,10 @@ function onTabClick(tab) {
   viewGroups.hidden = state.tab !== "groups";
   viewKo.hidden = state.tab !== "ko";
   viewScorers.hidden = state.tab !== "scorers";
+  if (viewLeague) viewLeague.hidden = state.tab !== "league";
   if (state.tab === "ko") viewKo.innerHTML = renderKnockout(state);
   if (state.tab === "scorers") viewScorers.innerHTML = renderScorers(state);
+  if (state.tab === "league") renderLeagueView();
   persist();
 }
 
@@ -221,112 +261,158 @@ function onReset() {
     : (confirm("¿Borrar tus pronósticos?") && (state.results = {}, state.ko = {}, state.tp = null, render(), persist()));
 }
 
-function onScorersSearch(event) {
-  const q = event.target.value.toLowerCase().trim();
-  const rows = document.querySelectorAll("#scorersList .scorer");
-
-  let visible = 0;
-
-  rows.forEach(row => {
-    const match = !q || row.dataset.search.includes(q);
-
-    row.style.display = match ? "" : "none";
-
-    if (match) visible++;
-  });
-
-  const empty = document.querySelector("#scorersEmpty");
-  if (empty) empty.hidden = visible > 0;
-}
-
-function onDocumentInput(event) {
-  if (event.target.id === "scorersSearch") { onScorersSearch(event); return; }
-  if (!event.target.closest) return;
-  onScoreInput(event);
-}
-
-function bindEvents() {
-  document.addEventListener("change", onDocumentInput);
-  document.addEventListener("click", onBoardClick);
-  document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => onTabClick(tab)));
-  $("#liveToggle").addEventListener("change", onLiveToggle);
-  $("#refresh").addEventListener("click", refreshLive);
-  $("#reset").addEventListener("click", onReset);
-  $("#themeToggle").addEventListener("click", onThemeToggle);
-  $("#switchUser").addEventListener("click", openGate);
-}
-
-function onThemeToggle() {
-  const next = toggleTheme();
-  $("#themeToggle").setAttribute("aria-pressed", next === "light");
-}
-
-function renderProfileChip(profile) {
+function renderProfileChip(user) {
   const chip = $("#profileChip");
-  const avatar = profile.picture
-    ? `<img class="profile__avatar" src="${profile.picture}" alt="" referrerpolicy="no-referrer">`
-    : `<span class="profile__avatar profile__avatar--initials">${initials(profile.name)}</span>`;
-  chip.innerHTML = `${avatar}<span class="profile__name">${profile.name}</span>`;
+  if (!chip) return;
+  const name = user.displayName || user.name || "Usuario";
+  const photo = user.photoURL || user.picture || null;
+  const avatar = photo
+    ? `<img class="profile__avatar" src="${photo}" alt="" referrerpolicy="no-referrer">`
+    : `<span class="profile__avatar profile__avatar--initials">${initials(name)}</span>`;
+  chip.innerHTML = `${avatar}<span class="profile__name">${name}</span>`;
 }
 
-function openGate() { $("#authGate").hidden = false; }
-function closeGate() { $("#authGate").hidden = true; }
+function renderLeagueView() {
+  if (!viewLeague) return;
+  const liga = getLigaActiva();
+  viewLeague.innerHTML = liga
+    ? '<div class="lock"><p class="lock__title">Cargando ranking…</p></div>'
+    : renderLeagueGate(false);
+  if (!liga) bindLeagueGate();
+}
 
-async function activateProfile(profile) {
-  renderProfileChip(profile);
-  closeGate();
-  storageKey = `wc2026:data:${profile.id}`;
-  const saved = await readKey(storageKey);
-  state = Object.assign(defaultState(), saved || {});
-  $("#liveToggle").checked = state.useLive;
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("tab--active", t.dataset.tab === state.tab));
-  viewGroups.hidden = state.tab !== "groups";
-  viewKo.hidden = state.tab !== "ko";
-  viewScorers.hidden = state.tab !== "scorers";
+function onRanking(ranking, uid) {
+  if (!viewLeague || viewLeague.hidden) return;
+  viewLeague.innerHTML = renderLeague(ranking, uid, getLigaActiva());
+}
+
+function bindLeagueGate() {
+  const formCrear = $("#formCrear");
+  const formUnirse = $("#formUnirse");
+  if (formCrear) formCrear.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const nombre = $("#inputNombreLiga").value.trim();
+    if (!nombre) return;
+    const codigo = await handleCrearLiga(currentUser.uid, nombre, currentUser.displayName || currentUser.name, currentUser.photoURL || null, onRanking);
+    if (window.Swal) window.Swal.fire({ title: "¡Liga creada!", html: `Compartí este código con tus contactos:<br><br><b style="font-size:1.4em;letter-spacing:.1em">${codigo}</b>`, icon: "success", background: "var(--color-surface)", color: "var(--color-text)" });
+  });
+  if (formUnirse) formUnirse.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const codigo = $("#inputCodigo").value.trim().toUpperCase();
+    try {
+      await handleUnirse(codigo, currentUser.uid, currentUser.displayName || currentUser.name, currentUser.photoURL || null, onRanking);
+    } catch (err) {
+      if (window.Swal) window.Swal.fire({ title: "Liga no encontrada", text: "Verificá el código e intentá de nuevo.", icon: "error", background: "var(--color-surface)", color: "var(--color-text)" });
+    }
+  });
+}
+
+async function onUserSignedIn(user) {
+  currentUser = user;
+  renderProfileChip(user);
+  $("#authGate").hidden = true;
+  const saved = await cargarPronosticos(user.uid);
+  state = Object.assign(defaultState(), {
+    results: saved || {},
+    useLive: true,
+    live: state.live,
+    liveAt: state.liveAt
+  });
+  const liveToggle = $("#liveToggle");
+  if (liveToggle) liveToggle.checked = true;
   render();
-  if (state.useLive) refreshLive();
+  if (Object.keys(state.live).length === 0) refreshLive();
   startPoll();
 }
 
-function initGate() {
-  const googleBtn = $("#googleBtn");
-  const googleWrap = $("#googleAuth");
-  if (!googleConfigured()) {
-    googleWrap.hidden = true;
-  } else {
-    renderGoogleButton(googleBtn, (profile) => activateProfile(profile));
-  }
-  $("#guestForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = $("#guestName").value;
-    const profile = signInAsGuest(name);
-    activateProfile(profile);
+function onUserSignedOut() {
+  currentUser = null;
+  desuscribirRanking();
+  state = defaultState();
+  $("#authGate").hidden = false;
+}
+
+function bindEvents() {
+  document.addEventListener("input", onDocumentInput);
+  document.addEventListener("click", onBoardClick);
+  document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => onTabClick(tab)));
+  const liveToggle = $("#liveToggle");
+  if (liveToggle) liveToggle.addEventListener("change", onLiveToggle);
+  const refresh = $("#refresh");
+  if (refresh) refresh.addEventListener("click", refreshLive);
+  const reset = $("#reset");
+  if (reset) reset.addEventListener("click", onReset);
+  const themeToggle = $("#themeToggle");
+  if (themeToggle) themeToggle.addEventListener("click", () => {
+    const next = toggleTheme();
+    themeToggle.setAttribute("aria-pressed", next === "light");
+  });
+  const switchUser = $("#switchUser");
+  if (switchUser) switchUser.addEventListener("click", () => { $("#authGate").hidden = false; });
+  const signoutBtn = $("#signout");
+  if (signoutBtn) signoutBtn.addEventListener("click", async () => {
+    desuscribirRanking();
+    await signOutUser();
+  });
+}
+
+function initAuthGate() {
+  const btnGoogle = $("#btnGoogle");
+  if (btnGoogle) btnGoogle.addEventListener("click", async () => {
+    try {
+      const user = await signInWithGoogle();
+      await onUserSignedIn(user);
+    } catch (e) {
+      if (window.Swal) window.Swal.fire({
+        title: "Error al iniciar sesión",
+        text: e.message,
+        icon: "error",
+        background: "var(--color-surface)",
+        color: "var(--color-text)"
+      });
+    }
+  });
+  const guestForm = $("#guestForm");
+  if (guestForm) guestForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#guestName").value.trim() || "Invitado";
+    const fakeUser = {
+      uid: `guest:${name.toLowerCase().replace(/\s+/g, "-")}`,
+      displayName: name,
+      photoURL: null,
+      email: null
+    };
+    currentUser = fakeUser;
+    renderProfileChip(fakeUser);
+    $("#authGate").hidden = true;
+    const saved = await readKey(`wc2026:guest:${fakeUser.uid}`);
+    state = Object.assign(defaultState(), saved || {});
+    render();
+    if (state.useLive) refreshLive();
+    startPoll();
   });
 }
 
 function loadSweetAlert() {
-  return new Promise(resolve => {
-    if (window.Swal) { resolve(); return; }
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
-    s.onload = resolve;
-    document.head.appendChild(s);
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css";
-    document.head.appendChild(l);
-  });
+  if (window.Swal) return;
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
+  document.head.appendChild(s);
 }
 
 async function init() {
   initTheme();
-  $("#themeToggle").setAttribute("aria-pressed", getTheme() === "light");
+  const themeToggle = $("#themeToggle");
+  if (themeToggle) themeToggle.setAttribute("aria-pressed", getTheme() === "light");
   bindEvents();
-  initGate();
-  const profile = getProfile();
-  if (profile) activateProfile(profile);
-  else openGate();
+  initAuthGate();
   loadSweetAlert();
+  onAuthChanged(async (user) => {
+    if (user) await onUserSignedIn(user);
+    else onUserSignedOut();
+  });
 }
 
 init();
