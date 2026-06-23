@@ -1,0 +1,43 @@
+@use "../abstracts/variables" as *;
+
+.footer {
+    max-width: $max-width;
+    margin: 48px auto 0;
+    padding: 24px 16px 32px;
+    border-top: 1px solid var(--color-line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    text-align: center;
+}
+
+.footer__built {
+    font-size: 12px;
+    color: var(--color-muted);
+    letter-spacing: .02em;
+}
+
+.footer__link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity $transition-fast;
+    letter-spacing: -0.02em;
+
+    &:hover {
+        opacity: .75;
+    }
+}
+
+.footer__promo {
+    width: 100%;
+    max-width: 504px;
+
+    iframe,
+    blockquote {
+        width: 100% !important;
+        border-radius: $radius !important;
+        border: 1px solid var(--color-line) !important;
+    }
+}
