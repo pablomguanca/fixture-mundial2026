@@ -1,10 +1,9 @@
 import { flagImg } from "./flag.js";
 
 function medalIcon(rank) {
-  if (rank === 1) return `<span class="rank__medal rank__medal--gold">🥇</span>`;
-  if (rank === 2) return `<span class="rank__medal rank__medal--silver">🥈</span>`;
-  if (rank === 3) return `<span class="rank__medal rank__medal--bronze">🥉</span>`;
-  return `<span class="rank__pos">${rank}</span>`;
+  const colors = ["var(--color-gold)", "var(--color-muted)", "#cd7f32"];
+  const color = rank <= 3 ? colors[rank - 1] : "var(--color-muted)";
+  return `<span class="rank__pos" style="color:${color}">${rank}</span>`;
 }
 
 function avatarHtml(miembro) {
