@@ -10,7 +10,7 @@ import { renderScorers } from "./modules/render-scorers.js";
 import { renderLeague, renderLeagueGate } from "./modules/render-league.js";
 import { signInWithGoogle, signOutUser, onAuthChanged } from "./modules/firebase.js";
 import { cargarPronosticos, guardarPronosticos } from "./modules/firestore.js";
-import { handleCrearLiga, handleUnirse, getLigaActiva, suscribirRanking, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
+import { handleCrearLiga, handleUnirse, handleSalir, getLigaActiva, getMisLigasLocal, cargarMisLigas, suscribirRanking, cambiarLigaActiva, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
 
 const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
 
@@ -277,13 +277,50 @@ function renderLeagueView() {
   const liga = getLigaActiva();
   viewLeague.innerHTML = liga
     ? '<div class="lock"><p class="lock__title">Cargando ranking…</p></div>'
-    : renderLeagueGate(false);
+    : renderLeagueGate();
   if (!liga) bindLeagueGate();
 }
 
 function onRanking(ranking, uid) {
   if (!viewLeague || viewLeague.hidden) return;
-  viewLeague.innerHTML = renderLeague(ranking, uid, getLigaActiva());
+  const liga = getLigaActiva();
+  const ligas = getMisLigasLocal();
+  viewLeague.innerHTML = renderLeague(ranking, uid, liga, ligas);
+  bindLeagueEvents(uid);
+}
+
+function bindLeagueEvents(uid) {
+  const selector = document.querySelector("#ligaSelector");
+  if (selector) selector.addEventListener("change", (e) => {
+    cambiarLigaActiva(e.target.value, uid, onRanking);
+  });
+
+  const btnSalir = document.querySelector("#btnSalirLiga");
+  if (btnSalir) btnSalir.addEventListener("click", async () => {
+    const codigo = btnSalir.dataset.codigo;
+    const confirm = await window.Swal?.fire({
+      title: "¿Salir de la liga?",
+      text: "Tu historial de pronósticos se mantiene, solo salís del ranking.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Salir",
+      cancelButtonText: "Cancelar",
+      background: "var(--color-surface)",
+      color: "var(--color-text)",
+      confirmButtonColor: "var(--color-flare)"
+    });
+    if (!confirm?.isConfirmed) return;
+    await handleSalir(uid, codigo);
+    const nuevaLiga = getLigaActiva();
+    if (nuevaLiga) suscribirRanking(nuevaLiga, uid, onRanking);
+    else renderLeagueView();
+  });
+
+  const btnNueva = document.querySelector("#btnNuevaLiga");
+  if (btnNueva) btnNueva.addEventListener("click", () => {
+    viewLeague.innerHTML = renderLeagueGate();
+    bindLeagueGate();
+  });
 }
 
 function bindLeagueGate() {
@@ -294,8 +331,14 @@ function bindLeagueGate() {
     if (!currentUser) return;
     const nombre = $("#inputNombreLiga").value.trim();
     if (!nombre) return;
-    const codigo = await handleCrearLiga(currentUser.uid, nombre, currentUser.displayName || currentUser.name, currentUser.photoURL || null, onRanking);
-    if (window.Swal) window.Swal.fire({ title: "¡Liga creada!", html: `Compartí este código con tus contactos:<br><br><b style="font-size:1.4em;letter-spacing:.1em">${codigo}</b>`, icon: "success", background: "var(--color-surface)", color: "var(--color-text)" });
+    const { codigo } = await handleCrearLiga(currentUser.uid, nombre, currentUser.displayName || currentUser.name, currentUser.photoURL || null, onRanking);
+    if (window.Swal) window.Swal.fire({
+      title: "¡Liga creada!",
+      html: `Compartí este código con tus contactos:<br><br><b style="font-size:1.4em;letter-spacing:.1em">${codigo}</b>`,
+      icon: "success",
+      background: "var(--color-surface)",
+      color: "var(--color-text)"
+    });
   });
   if (formUnirse) formUnirse.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -304,7 +347,13 @@ function bindLeagueGate() {
     try {
       await handleUnirse(codigo, currentUser.uid, currentUser.displayName || currentUser.name, currentUser.photoURL || null, onRanking);
     } catch (err) {
-      if (window.Swal) window.Swal.fire({ title: "Liga no encontrada", text: "Verificá el código e intentá de nuevo.", icon: "error", background: "var(--color-surface)", color: "var(--color-text)" });
+      if (window.Swal) window.Swal.fire({
+        title: "Liga no encontrada",
+        text: "Verificá el código e intentá de nuevo.",
+        icon: "error",
+        background: "var(--color-surface)",
+        color: "var(--color-text)"
+      });
     }
   });
 }
@@ -313,7 +362,10 @@ async function onUserSignedIn(user) {
   currentUser = user;
   renderProfileChip(user);
   $("#authGate").hidden = true;
-  const saved = await cargarPronosticos(user.uid);
+  const [saved] = await Promise.all([
+    cargarPronosticos(user.uid),
+    cargarMisLigas(user.uid)
+  ]);
   state = Object.assign(defaultState(), {
     results: saved || {},
     useLive: true,
