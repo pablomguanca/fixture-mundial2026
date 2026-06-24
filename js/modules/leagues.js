@@ -1,15 +1,23 @@
 import { crearLiga, unirseALiga, escucharMiembros, actualizarPuntos } from "./firestore.js";
 
-let ligaActiva = null;
+const LIGA_KEY = "wc2026:liga";
+
+let ligaActiva = localStorage.getItem(LIGA_KEY) || null;
 let unsubscribeLiga = null;
 
 export function getLigaActiva() {
   return ligaActiva;
 }
 
+function setLigaActiva(codigo) {
+  ligaActiva = codigo;
+  if (codigo) localStorage.setItem(LIGA_KEY, codigo);
+  else localStorage.removeItem(LIGA_KEY);
+}
+
 export async function handleCrearLiga(uid, nombre, userName, foto, onRanking) {
   const codigo = await crearLiga(uid, nombre, userName);
-  ligaActiva = codigo;
+  setLigaActiva(codigo);
   suscribirRanking(codigo, uid, onRanking);
   return codigo;
 }
@@ -17,7 +25,7 @@ export async function handleCrearLiga(uid, nombre, userName, foto, onRanking) {
 export async function handleUnirse(codigo, uid, userName, foto, onRanking) {
   const limpio = codigo.trim().toUpperCase();
   await unirseALiga(limpio, uid, userName, foto);
-  ligaActiva = limpio;
+  setLigaActiva(limpio);
   suscribirRanking(limpio, uid, onRanking);
   return limpio;
 }
@@ -32,7 +40,7 @@ export function suscribirRanking(codigo, uid, callback) {
 
 export function desuscribirRanking() {
   if (unsubscribeLiga) { unsubscribeLiga(); unsubscribeLiga = null; }
-  ligaActiva = null;
+  setLigaActiva(null);
 }
 
 export async function sincronizarPuntos(uid, codigo, puntos) {

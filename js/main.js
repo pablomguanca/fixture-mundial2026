@@ -10,7 +10,7 @@ import { renderScorers } from "./modules/render-scorers.js";
 import { renderLeague, renderLeagueGate } from "./modules/render-league.js";
 import { signInWithGoogle, signOutUser, onAuthChanged } from "./modules/firebase.js";
 import { cargarPronosticos, guardarPronosticos } from "./modules/firestore.js";
-import { handleCrearLiga, handleUnirse, getLigaActiva, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
+import { handleCrearLiga, handleUnirse, getLigaActiva, suscribirRanking, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
 
 const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
 
@@ -325,6 +325,8 @@ async function onUserSignedIn(user) {
   render();
   if (Object.keys(state.live).length === 0) refreshLive();
   startPoll();
+  const ligaGuardada = getLigaActiva();
+  if (ligaGuardada) suscribirRanking(ligaGuardada, user.uid, onRanking);
 }
 
 function onUserSignedOut() {
