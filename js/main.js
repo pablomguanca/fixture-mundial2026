@@ -2,7 +2,7 @@ import { readKey, writeKey, debounce } from "./modules/storage.js";
 import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
 import { initials } from "./modules/auth.js";
 import { fetchLive } from "./modules/live.js";
-import { matchKey, filledCount, groupsComplete, invalidateDownstream } from "./modules/standings.js";
+import { matchKey, filledCount, groupsComplete, invalidateDownstream, tieLoser } from "./modules/standings.js";
 import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
 import { renderKnockout } from "./modules/render-knockout.js";
@@ -197,9 +197,58 @@ function onScorersSearch(event) {
   if (empty) empty.hidden = visible > 0;
 }
 
+function onKoScoreInput(input) {
+  let value = input.value.replace(/\D/g, "");
+  if (value.length > 2) value = value.slice(0, 2);
+  input.value = value;
+
+  if (input.dataset.koR !== undefined) {
+    const round = input.dataset.koR, m = input.dataset.koM, side = input.dataset.koS;
+    const key = `${round}-${m}`;
+    state.koScores = state.koScores || {};
+    state.koScores[key] = state.koScores[key] || { h: "", a: "" };
+    state.koScores[key][side] = value;
+    invalidateDownstream(state);
+    viewKo.innerHTML = renderKnockout(state);
+    persist();
+    return;
+  }
+
+  if (input.dataset.kopR !== undefined) {
+    const round = input.dataset.kopR, m = input.dataset.kopM, side = input.dataset.kopS;
+    const key = `${round}-${m}`;
+    state.koPens = state.koPens || {};
+    state.koPens[key] = state.koPens[key] || { h: "", a: "" };
+    state.koPens[key][side] = value;
+    invalidateDownstream(state);
+    viewKo.innerHTML = renderKnockout(state);
+    persist();
+    return;
+  }
+
+  if (input.dataset.kop3S !== undefined) {
+    const side = input.dataset.kop3S;
+    state.koScores = state.koScores || {};
+    state.koScores["3p"] = state.koScores["3p"] || { h: "", a: "" };
+    state.koScores["3p"][side] = value;
+    const s = state.koScores["3p"];
+    if (s.h !== "" && s.a !== "") {
+      const loserA = tieLoser(state, 3, 0);
+      const loserB = tieLoser(state, 3, 1);
+      if (Number(s.h) > Number(s.a)) state.tp = loserA;
+      else if (Number(s.a) > Number(s.h)) state.tp = loserB;
+      else state.tp = null;
+    }
+    viewKo.innerHTML = renderKnockout(state);
+    persist();
+  }
+}
+
 function onDocumentInput(event) {
   if (event.target.id === "scorersSearch") { onScorersSearch(event); return; }
   if (!event.target.closest) return;
+  const koInput = event.target.closest(".score--ko");
+  if (koInput) { onKoScoreInput(koInput); return; }
   onScoreInput(event);
 }
 
@@ -449,12 +498,20 @@ function initAuthGate() {
   });
 }
 
+function loadSweetAlert() {
+  if (window.Swal) return;
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
+  document.head.appendChild(s);
+}
+
 async function init() {
   initTheme();
   const themeToggle = $("#themeToggle");
   if (themeToggle) themeToggle.setAttribute("aria-pressed", getTheme() === "light");
   bindEvents();
   initAuthGate();
+  loadSweetAlert();
   onAuthChanged(async (user) => {
     if (user) await onUserSignedIn(user);
     else onUserSignedOut();
