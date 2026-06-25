@@ -197,6 +197,16 @@ function onScorersSearch(event) {
   if (empty) empty.hidden = visible > 0;
 }
 
+function renderKnockoutKeepScroll() {
+  const ko = viewKo.querySelector(".ko");
+  const scrollLeft = ko ? ko.scrollLeft : 0;
+  viewKo.innerHTML = renderKnockout(state);
+  requestAnimationFrame(() => {
+    const koNew = viewKo.querySelector(".ko");
+    if (koNew) koNew.scrollLeft = scrollLeft;
+  });
+}
+
 function onKoScoreInput(input) {
   let value = input.value.replace(/\D/g, "");
   if (value.length > 2) value = value.slice(0, 2);
@@ -209,7 +219,7 @@ function onKoScoreInput(input) {
     state.koScores[key] = state.koScores[key] || { h: "", a: "" };
     state.koScores[key][side] = value;
     invalidateDownstream(state);
-    viewKo.innerHTML = renderKnockout(state);
+    renderKnockoutKeepScroll();
     persist();
     return;
   }
@@ -221,13 +231,13 @@ function onKoScoreInput(input) {
     state.koPens[key] = state.koPens[key] || { h: "", a: "" };
     state.koPens[key][side] = value;
     invalidateDownstream(state);
-    viewKo.innerHTML = renderKnockout(state);
+    renderKnockoutKeepScroll();
     persist();
     return;
   }
 
-  if (input.dataset.kop3S !== undefined) {
-    const side = input.dataset.kop3S;
+  if (input.dataset.tpSide !== undefined) {
+    const side = input.dataset.tpSide;
     state.koScores = state.koScores || {};
     state.koScores["3p"] = state.koScores["3p"] || { h: "", a: "" };
     state.koScores["3p"][side] = value;
@@ -239,7 +249,7 @@ function onKoScoreInput(input) {
       else if (Number(s.a) > Number(s.h)) state.tp = loserB;
       else state.tp = null;
     }
-    viewKo.innerHTML = renderKnockout(state);
+    renderKnockoutKeepScroll();
     persist();
   }
 }
@@ -498,20 +508,12 @@ function initAuthGate() {
   });
 }
 
-function loadSweetAlert() {
-  if (window.Swal) return;
-  const s = document.createElement("script");
-  s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
-  document.head.appendChild(s);
-}
-
 async function init() {
   initTheme();
   const themeToggle = $("#themeToggle");
   if (themeToggle) themeToggle.setAttribute("aria-pressed", getTheme() === "light");
   bindEvents();
   initAuthGate();
-  loadSweetAlert();
   onAuthChanged(async (user) => {
     if (user) await onUserSignedIn(user);
     else onUserSignedOut();
