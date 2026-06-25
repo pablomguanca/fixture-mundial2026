@@ -449,20 +449,12 @@ function initAuthGate() {
   });
 }
 
-function loadSweetAlert() {
-  if (window.Swal) return;
-  const s = document.createElement("script");
-  s.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
-  document.head.appendChild(s);
-}
-
 async function init() {
   initTheme();
   const themeToggle = $("#themeToggle");
   if (themeToggle) themeToggle.setAttribute("aria-pressed", getTheme() === "light");
   bindEvents();
   initAuthGate();
-  loadSweetAlert();
   onAuthChanged(async (user) => {
     if (user) await onUserSignedIn(user);
     else onUserSignedOut();
