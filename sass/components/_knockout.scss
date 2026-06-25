@@ -2,28 +2,42 @@
 
 .ko {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
-  padding: 4px 2px 24px;
+  padding: 4px 16px 32px;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+
+  &::after {
+    content: "";
+    display: block;
+    min-width: 16px;
+    flex: none;
+  }
 }
 
 .round {
-  min-width: 230px;
+  min-width: 200px;
   flex: none;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+
+  @media (min-width: $breakpoint-sm) {
+    min-width: 220px;
+  }
 
   &__title {
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: .2em;
     text-transform: uppercase;
     color: var(--color-muted);
     font-weight: 700;
-    padding: 0 2px 2px;
+    padding: 0 2px 6px;
+    white-space: nowrap;
   }
 
   &--final &__title {
@@ -34,80 +48,107 @@
 .tie {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 11px;
+  border-radius: $radius;
   overflow: hidden;
 
-  &--centered {
-    margin: auto 0;
-  }
+  &__row {
+    display: grid;
+    grid-template-columns: 26px 1fr auto 38px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--color-line);
+    transition: background $transition-fast;
 
-  &--empty {
-    padding: 16px 11px;
-    color: var(--color-muted);
-    font-size: 12px;
-    text-align: center;
-  }
-}
+    &:last-of-type {
+      border-bottom: none;
+    }
 
-.tie__team {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 11px;
-  width: 100%;
-  text-align: left;
-  border-bottom: 1px solid var(--color-line);
-  transition: $transition-fast;
+    &--winner {
+      background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
 
-  &:last-child {
-    border-bottom: none;
-  }
+      .tie__name {
+        color: var(--color-accent);
+        font-weight: 700;
+      }
+    }
 
-  .flag {
-    width: 24px;
-    height: 16px;
-    border-radius: 3px;
-    flex: none;
-  }
+    &--loser {
+      opacity: .45;
+    }
 
-  &--pick {
-    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    &--empty {
+      padding: 12px 10px;
+      grid-template-columns: 1fr;
+    }
 
-    .tie__name {
-      color: var(--color-accent);
+    .flag {
+      width: 22px;
+      height: 15px;
+      border-radius: 3px;
+      flex: none;
     }
   }
 
-  &--dim {
-    opacity: .4;
+  &__name {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+
+    &--tbd {
+      color: var(--color-muted);
+      font-weight: 400;
+      font-style: italic;
+    }
   }
 
-  &[disabled] {
-    cursor: default;
+  &__seed {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+    white-space: nowrap;
   }
 
-  &:not([disabled]):hover {
-    background: var(--color-surface-2);
+  &__pens {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: color-mix(in srgb, var(--color-gold) 8%, var(--color-surface));
+    border-top: 1px solid color-mix(in srgb, var(--color-gold) 30%, transparent);
+    font-size: 11px;
+  }
+
+  &__pens-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--color-gold);
+    margin-right: 4px;
   }
 }
 
-.tie__name {
-  font-weight: 600;
-  font-size: 13px;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tie__seed {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-muted);
-  font-variant-numeric: tabular-nums;
+.score--ko {
+  width: 34px;
+  height: 32px;
+  font-size: 15px;
+  border-radius: 7px;
   flex: none;
+  padding: 0;
+  text-align: center;
+}
+
+.score--pens {
+  width: 30px;
+  height: 28px;
+  font-size: 13px;
 }
 
 .champion {
