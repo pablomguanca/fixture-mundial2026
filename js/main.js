@@ -201,10 +201,11 @@ function renderKnockoutKeepScroll() {
   const ko = viewKo.querySelector(".ko");
   const scrollLeft = ko ? ko.scrollLeft : 0;
   viewKo.innerHTML = renderKnockout(state);
-  requestAnimationFrame(() => {
-    const koNew = viewKo.querySelector(".ko");
-    if (koNew) koNew.scrollLeft = scrollLeft;
-  });
+  const koNew = viewKo.querySelector(".ko");
+  if (koNew) {
+    koNew.scrollLeft = scrollLeft;
+    requestAnimationFrame(() => { koNew.scrollLeft = scrollLeft; });
+  }
 }
 
 function onKoScoreInput(input) {
