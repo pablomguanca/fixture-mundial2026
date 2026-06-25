@@ -76,7 +76,7 @@ function thirdPlaceBlock(state) {
       ${flagImg(code, 40)}
       <span class="tie__name">${TEAMS[code].n}</span>
       <input class="score score--ko ${filled}" inputmode="numeric" maxlength="2" placeholder="–"
-        value="${val}" data-kop3-s="${side}" aria-label="${TEAMS[code].n}"
+        value="${val}" data-tp-side="${side}" aria-label="${TEAMS[code].n}"
         ${!loserA || !loserB ? "disabled" : ""}>
     </div>`;
   }
