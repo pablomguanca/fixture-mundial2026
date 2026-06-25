@@ -83,6 +83,18 @@ export function tieTeams(state, round, m) {
 
 export function tieWinner(state, round, m) {
   const teams = tieTeams(state, round, m);
+  if (!teams[0] || !teams[1]) return null;
+  const score = state.koScores?.[`${round}-${m}`];
+  if (score && score.h !== "" && score.a !== "") {
+    const h = Number(score.h), a = Number(score.a);
+    if (h !== a) return h > a ? teams[0] : teams[1];
+    const pens = state.koPens?.[`${round}-${m}`];
+    if (pens && pens.h !== "" && pens.a !== "") {
+      const ph = Number(pens.h), pa = Number(pens.a);
+      if (ph !== pa) return ph > pa ? teams[0] : teams[1];
+    }
+    return null;
+  }
   const pick = state.ko[round + "-" + m];
   return teams.includes(pick) ? pick : null;
 }
