@@ -32,14 +32,15 @@ function tieBlock(state, round, m) {
     const seedTag = isFirstRound ? `<span class="tie__seed">#${SEED_SLOTS[2 * m + idx]}</span>` : "";
     const val = side === "h" ? score.h : score.a;
     const filled = val !== "" ? "score--filled" : "";
-    return `<div class="tie__row ${isWinner ? "tie__row--winner" : ""} ${isLoser ? "tie__row--loser" : ""}">
-      ${flagImg(code, 40)}
-      <span class="tie__name">${TEAMS[code].n}</span>
-      ${seedTag}
-      <input class="score score--ko ${filled}" inputmode="numeric" maxlength="2" placeholder="–"
-        value="${val}" data-ko-r="${round}" data-ko-m="${m}" data-ko-s="${side}"
-        aria-label="${TEAMS[code].n}" ${!home || !away ? "disabled" : ""}>
-    </div>`;
+    return `<div class="tie__row ${isWinner ? "tie__row--winner" : ""} ${isLoser ? "tie__row--loser" : ""}"
+    data-tie-r="${round}" data-tie-m="${m}" data-tie-c="${code}">
+    ${flagImg(code, 40)}
+    <span class="tie__name">${TEAMS[code].n}</span>
+    ${seedTag}
+    <input class="score score--ko ${filled}" inputmode="numeric" maxlength="2" placeholder="–"
+      value="${val}" data-ko-r="${round}" data-ko-m="${m}" data-ko-s="${side}"
+      aria-label="${TEAMS[code].n}" ${!home || !away ? "disabled" : ""}>
+  </div>`;
   }
 
   const needsPens = score.h !== "" && score.a !== "" && Number(score.h) === Number(score.a);

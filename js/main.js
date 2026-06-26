@@ -197,15 +197,14 @@ function onScorersSearch(event) {
   if (empty) empty.hidden = visible > 0;
 }
 
-function renderKnockoutKeepScroll() {
-  const ko = viewKo.querySelector(".ko");
-  const scrollLeft = ko ? ko.scrollLeft : 0;
-  viewKo.innerHTML = renderKnockout(state);
-  const koNew = viewKo.querySelector(".ko");
-  if (koNew) {
-    koNew.scrollLeft = scrollLeft;
-    requestAnimationFrame(() => { koNew.scrollLeft = scrollLeft; });
-  }
+function updateTieVisuals(round, m) {
+  const winner = tieWinner(state, round, m);
+  const rows = viewKo.querySelectorAll(`.tie__row[data-tie-r="${round}"][data-tie-m="${m}"]`);
+  rows.forEach(row => {
+    const code = row.dataset.tieC;
+    row.classList.toggle("tie__row--winner", winner === code);
+    row.classList.toggle("tie__row--loser", !!winner && winner !== code);
+  });
 }
 
 function onKoScoreInput(input) {
@@ -214,25 +213,37 @@ function onKoScoreInput(input) {
   input.value = value;
 
   if (input.dataset.koR !== undefined) {
-    const round = input.dataset.koR, m = input.dataset.koM, side = input.dataset.koS;
+    const round = Number(input.dataset.koR);
+    const m = Number(input.dataset.koM);
+    const side = input.dataset.koS;
     const key = `${round}-${m}`;
     state.koScores = state.koScores || {};
     state.koScores[key] = state.koScores[key] || { h: "", a: "" };
     state.koScores[key][side] = value;
+    const prevWinner = state.ko[key];
     invalidateDownstream(state);
-    renderKnockoutKeepScroll();
+    updateTieVisuals(round, m);
+    const newWinner = tieWinner(state, round, m);
+    if (newWinner !== prevWinner) {
+      const ko = viewKo.querySelector(".ko");
+      const scrollLeft = ko ? ko.scrollLeft : 0;
+      viewKo.innerHTML = renderKnockout(state);
+      if (ko) viewKo.querySelector(".ko").scrollLeft = scrollLeft;
+    }
     persist();
     return;
   }
 
   if (input.dataset.kopR !== undefined) {
-    const round = input.dataset.kopR, m = input.dataset.kopM, side = input.dataset.kopS;
+    const round = Number(input.dataset.kopR);
+    const m = Number(input.dataset.kopM);
+    const side = input.dataset.kopS;
     const key = `${round}-${m}`;
     state.koPens = state.koPens || {};
     state.koPens[key] = state.koPens[key] || { h: "", a: "" };
     state.koPens[key][side] = value;
     invalidateDownstream(state);
-    renderKnockoutKeepScroll();
+    updateTieVisuals(round, m);
     persist();
     return;
   }
@@ -250,7 +261,6 @@ function onKoScoreInput(input) {
       else if (Number(s.a) > Number(s.h)) state.tp = loserB;
       else state.tp = null;
     }
-    renderKnockoutKeepScroll();
     persist();
   }
 }
