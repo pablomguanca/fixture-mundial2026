@@ -217,10 +217,10 @@ function onKoScoreInput(input) {
     const m = Number(input.dataset.koM);
     const side = input.dataset.koS;
     const key = `${round}-${m}`;
+    const prevWinner = tieWinner(state, round, m);
     state.koScores = state.koScores || {};
     state.koScores[key] = state.koScores[key] || { h: "", a: "" };
     state.koScores[key][side] = value;
-    const prevWinner = state.ko[key];
     invalidateDownstream(state);
     updateTieVisuals(round, m);
     const newWinner = tieWinner(state, round, m);
