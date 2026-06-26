@@ -93,3 +93,22 @@ export async function actualizarPuntos(uid, codigo, puntos) {
     await updateDoc(miembroRef, { puntos });
   } catch (e) { }
 }
+
+function koRef(uid) {
+  return doc(db, "usuarios", uid, "datos", "knockout");
+}
+
+export async function cargarKnockout(uid) {
+  try {
+    const snap = await getDoc(koRef(uid));
+    return snap.exists() ? snap.data() : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+export async function guardarKnockout(uid, koState) {
+  try {
+    await setDoc(koRef(uid), koState, { merge: true });
+  } catch (e) { }
+}
