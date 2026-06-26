@@ -567,4 +567,6 @@ async function init() {
   });
 }
 
+window.__state = state;
+
 init();
