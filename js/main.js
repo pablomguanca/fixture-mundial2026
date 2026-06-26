@@ -224,7 +224,10 @@ function onKoScoreInput(input) {
     invalidateDownstream(state);
     updateTieVisuals(round, m);
     const newWinner = tieWinner(state, round, m);
-    if (newWinner !== prevWinner) {
+    const score = state.koScores[key];
+    const isComplete = score.h !== "" && score.a !== "";
+    const isDraw = isComplete && Number(score.h) === Number(score.a);
+    if (newWinner !== prevWinner || isDraw) {
       const ko = viewKo.querySelector(".ko");
       const scrollLeft = ko ? ko.scrollLeft : 0;
       viewKo.innerHTML = renderKnockout(state);
