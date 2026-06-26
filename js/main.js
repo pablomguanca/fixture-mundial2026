@@ -2,7 +2,7 @@ import { readKey, writeKey, debounce } from "./modules/storage.js";
 import { initTheme, toggleTheme, getTheme } from "./modules/theme.js";
 import { initials } from "./modules/auth.js";
 import { fetchLive } from "./modules/live.js";
-import { matchKey, filledCount, groupsComplete, invalidateDownstream, tieLoser } from "./modules/standings.js";
+import { matchKey, filledCount, groupsComplete, invalidateDownstream, tieLoser, tieWinner } from "./modules/standings.js";
 import { isLocked, totalPoints } from "./modules/scoring.js";
 import { renderGroups } from "./modules/render-groups.js";
 import { renderKnockout } from "./modules/render-knockout.js";
