@@ -9,10 +9,20 @@ import { renderKnockout } from "./modules/render-knockout.js";
 import { renderScorers } from "./modules/render-scorers.js";
 import { renderLeague, renderLeagueGate } from "./modules/render-league.js";
 import { signInWithGoogle, signOutUser, onAuthChanged } from "./modules/firebase.js";
-import { cargarPronosticos, guardarPronosticos } from "./modules/firestore.js";
+import { cargarPronosticos, guardarPronosticos, cargarKnockout, guardarKnockout, getMisLigas, salirDeLiga } from "./modules/firestore.js";
 import { handleCrearLiga, handleUnirse, handleSalir, getLigaActiva, getMisLigasLocal, cargarMisLigas, suscribirRanking, cambiarLigaActiva, sincronizarPuntos, desuscribirRanking } from "./modules/leagues.js";
 
-const defaultState = () => ({ results: {}, ko: {}, tp: null, tab: "groups", useLive: true, live: {}, liveAt: 0 });
+const defaultState = () => ({
+  results: {},
+  ko: {},
+  koScores: {},
+  koPens: {},
+  tp: null,
+  tab: "groups",
+  useLive: true,
+  live: {},
+  liveAt: 0
+});
 
 let state = defaultState();
 let currentUser = null;
@@ -29,6 +39,12 @@ const viewLeague = $("#view-league");
 const persistFirestore = debounce(async () => {
   if (!currentUser || currentUser.uid.startsWith("guest:")) return;
   await guardarPronosticos(currentUser.uid, state.results);
+  await guardarKnockout(currentUser.uid, {
+    ko: state.ko,
+    koScores: state.koScores || {},
+    koPens: state.koPens || {},
+    tp: state.tp
+  });
   const pts = totalPoints(state);
   const liga = getLigaActiva();
   if (liga) await sincronizarPuntos(currentUser.uid, liga, pts);
@@ -36,7 +52,13 @@ const persistFirestore = debounce(async () => {
 
 const persistLocal = debounce(() => {
   if (!currentUser) return;
-  writeKey(`wc2026:guest:${currentUser.uid}`, state);
+  writeKey(`wc2026:guest:${currentUser.uid}`, {
+    results: state.results,
+    ko: state.ko,
+    koScores: state.koScores || {},
+    koPens: state.koPens || {},
+    tp: state.tp
+  });
 }, 250);
 
 function persist() {
@@ -435,12 +457,17 @@ async function onUserSignedIn(user) {
   currentUser = user;
   renderProfileChip(user);
   $("#authGate").hidden = true;
-  const [saved] = await Promise.all([
+  const [saved, savedKo] = await Promise.all([
     cargarPronosticos(user.uid),
+    cargarKnockout(user.uid),
     cargarMisLigas(user.uid)
   ]);
   state = Object.assign(defaultState(), {
     results: saved || {},
+    ko: savedKo?.ko || {},
+    koScores: savedKo?.koScores || {},
+    koPens: savedKo?.koPens || {},
+    tp: savedKo?.tp || null,
     useLive: true,
     live: state.live,
     liveAt: state.liveAt
@@ -515,7 +542,13 @@ function initAuthGate() {
     renderProfileChip(fakeUser);
     $("#authGate").hidden = true;
     const saved = await readKey(`wc2026:guest:${fakeUser.uid}`);
-    state = Object.assign(defaultState(), saved || {});
+    state = Object.assign(defaultState(), {
+      results: saved?.results || saved || {},
+      ko: saved?.ko || {},
+      koScores: saved?.koScores || {},
+      koPens: saved?.koPens || {},
+      tp: saved?.tp || null
+    });
     render();
     if (state.useLive) refreshLive();
     startPoll();
